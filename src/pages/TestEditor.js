@@ -47,7 +47,7 @@ const TestEditor = () => {
   const getDefaultConfig = (type) => {
     switch (type) {
       case 'navigate':
-        return { url: 'https://test.dakika.com.tr/' };
+        return { url: '' };
       case 'click':
         return { selector: '#button', description: 'Button element' };
       case 'input':
@@ -192,6 +192,87 @@ const TestEditor = () => {
     }
   };
 
+  const exportTestFlow = () => {
+    try {
+      const testData = {
+        testName,
+        steps,
+        exportDate: new Date().toISOString(),
+        version: '1.0'
+      };
+
+      const jsonString = JSON.stringify(testData, null, 2);
+      const blob = new Blob([jsonString], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${testName.replace(/\s+/g, '_')}_test_flow.json`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      URL.revokeObjectURL(url);
+      
+      alert(`✅ Test akışı başarıyla dışa aktarıldı!\nDosya adı: ${testName.replace(/\s+/g, '_')}_test_flow.json`);
+    } catch (error) {
+      console.error('Dışa aktarma hatası:', error);
+      alert(`❌ Dışa aktarma hatası: ${error.message}`);
+    }
+  };
+
+  const importTestFlow = () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json';
+    input.onchange = (event) => {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const testData = JSON.parse(e.target.result);
+          
+          // Veri doğrulama
+          if (!testData.testName || !Array.isArray(testData.steps)) {
+            throw new Error('Geçersiz test dosyası formatı');
+          }
+
+          // Icon mapping için stepTypes'ı kullan
+          const getIconForType = (stepType) => {
+            const stepTypeObj = stepTypes.find(st => st.id === stepType);
+            return stepTypeObj ? stepTypeObj.icon : null;
+          };
+
+          // Adım verilerini doğrula ve icon'ları düzelt
+          const validSteps = testData.steps.filter(step => 
+            step.id && step.type && step.name && step.config
+          ).map(step => ({
+            ...step,
+            icon: getIconForType(step.type), // Icon'u type'a göre yeniden ata
+            id: Date.now() + Math.random() // ID'yi yeniden oluştur
+          })).filter(step => step.icon !== null); // Geçersiz type'ları filtrele
+
+          if (validSteps.length !== testData.steps.length) {
+            console.warn('Bazı adımlar geçersiz olduğu için atlandı');
+          }
+
+          setTestName(testData.testName);
+          setSteps(validSteps);
+          setSelectedStep(null);
+          
+          alert(`✅ Test akışı başarıyla içe aktarıldı!\nTest adı: ${testData.testName}\nAdım sayısı: ${validSteps.length}`);
+        } catch (error) {
+          console.error('İçe aktarma hatası:', error);
+          alert(`❌ İçe aktarma hatası: ${error.message}\n\nDosyanın geçerli bir test akışı JSON dosyası olduğundan emin olun.`);
+        }
+      };
+      reader.readAsText(file);
+    };
+    input.click();
+  };
+
   return (
     <div className="test-editor">
       <div className="editor-header">
@@ -205,11 +286,11 @@ const TestEditor = () => {
           <p>🧩 Sürükle bırak arayüzü ile test adımlarını tanımlayın</p>
         </div>
         <div className="header-actions">
-          <button className="btn btn-secondary">
+          <button className="btn btn-secondary" onClick={importTestFlow}>
             <Upload size={16} />
             İçe Aktar
           </button>
-          <button className="btn btn-secondary">
+          <button className="btn btn-secondary" onClick={exportTestFlow}>
             <Download size={16} />
             Dışa Aktar
           </button>
