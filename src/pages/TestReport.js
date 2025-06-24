@@ -5,7 +5,6 @@ import {
   Calendar, 
   Clock, 
   Download, 
-  Share2, 
   CheckCircle, 
   XCircle, 
   AlertCircle,
@@ -235,10 +234,6 @@ const TestReport = () => {
           </div>
         </div>
         <div className="header-actions">
-          <button className="btn btn-secondary">
-            <Share2 size={16} />
-            Paylaş
-          </button>
           <button className="btn btn-secondary" onClick={handleDownloadReport}>
             <Download size={16} />
             Raporu İndir
