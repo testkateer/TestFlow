@@ -344,7 +344,6 @@ const TestEditor = () => {
             onChange={(e) => setTestName(e.target.value)}
             className="test-name-input"
           />
-          <p>🧩 Sürükle bırak arayüzü ile test adımlarını tanımlayın</p>
         </div>
         <div className="header-actions">
           <button className="btn btn-secondary" onClick={importTestFlow}>
@@ -504,6 +503,15 @@ const TestEditor = () => {
                 
                 {selectedStep.type === 'click' && (
                   <>
+                  <div className="form-group">
+                      <label>Adım Açıklaması:</label>
+                      <input
+                        type="text"
+                        value={selectedStep.config.description || ''}
+                        onChange={(e) => updateStepConfig(selectedStep.id, { description: e.target.value })}
+                        placeholder="Tıklama açıklaması"
+                      />
+                    </div>
                     <div className="form-group">
                       <label>Element/XPath/Selector Seçici:</label>
                       <input
@@ -513,20 +521,21 @@ const TestEditor = () => {
                         placeholder="#button"
                       />
                     </div>
-                    <div className="form-group">
-                      <label>Açıklama:</label>
-                      <input
-                        type="text"
-                        value={selectedStep.config.description || ''}
-                        onChange={(e) => updateStepConfig(selectedStep.id, { description: e.target.value })}
-                        placeholder="Element açıklaması"
-                      />
-                    </div>
+                    
                   </>
                 )}
                 
                 {selectedStep.type === 'input' && (
                   <>
+                    <div className="form-group">
+                      <label>Adım Açıklaması:</label>
+                      <input
+                        type="text"
+                        value={selectedStep.config.description || ''}
+                        onChange={(e) => updateStepConfig(selectedStep.id, { description: e.target.value })}
+                        placeholder="Alan açıklaması"
+                      />
+                    </div>
                     <div className="form-group">
                       <label>Element/XPath/Selector Seçici:</label>
                       <input
@@ -545,20 +554,21 @@ const TestEditor = () => {
                         placeholder="Girilecek metin"
                       />
                     </div>
-                    <div className="form-group">
-                      <label>Açıklama:</label>
-                      <input
-                        type="text"
-                        value={selectedStep.config.description || ''}
-                        onChange={(e) => updateStepConfig(selectedStep.id, { description: e.target.value })}
-                        placeholder="Alan açıklaması"
-                      />
-                    </div>
+                    
                   </>
                 )}
                 
                 {selectedStep.type === 'wait' && (
                   <>
+                    <div className="form-group">
+                      <label>Adım Açıklaması:</label>
+                      <input
+                        type="text"
+                        value={selectedStep.config.description || ''}
+                        onChange={(e) => updateStepConfig(selectedStep.id, { description: e.target.value })}
+                        placeholder="Bekleme açıklaması"
+                      />
+                    </div>
                     <div className="form-group">
                       <label>Süre (ms):</label>
                       <input
@@ -568,20 +578,20 @@ const TestEditor = () => {
                         placeholder="2000"
                       />
                     </div>
-                    <div className="form-group">
-                      <label>Açıklama:</label>
-                      <input
-                        type="text"
-                        value={selectedStep.config.description || ''}
-                        onChange={(e) => updateStepConfig(selectedStep.id, { description: e.target.value })}
-                        placeholder="Bekleme açıklaması"
-                      />
-                    </div>
                   </>
                 )}
                 
                 {selectedStep.type === 'verify' && (
-                  <>
+                  <>  
+                    <div className="form-group">
+                      <label>Adım Açıklaması:</label>
+                      <input
+                        type="text"
+                        value={selectedStep.config.description || ''}
+                        onChange={(e) => updateStepConfig(selectedStep.id, { description: e.target.value })}
+                        placeholder="Doğrulama açıklaması"
+                      />
+                    </div>
                     <div className="form-group">
                       <label>Element/XPath/Selector Seçici:</label>
                       <input
@@ -591,21 +601,12 @@ const TestEditor = () => {
                         placeholder="#element"
                       />
                     </div>
-                    <div className="form-group">
-                      <label>Açıklama:</label>
-                      <input
-                        type="text"
-                        value={selectedStep.config.description || ''}
-                        onChange={(e) => updateStepConfig(selectedStep.id, { description: e.target.value })}
-                        placeholder="Doğrulama açıklaması"
-                      />
-                    </div>
                   </>
                 )}
                 
                 {selectedStep.type === 'refresh' && (
                   <div className="form-group">
-                    <label>Açıklama:</label>
+                    <label>Adım Açıklaması:</label>
                     <input
                       type="text"
                       value={selectedStep.config.description || ''}

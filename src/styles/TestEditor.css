@@ -130,16 +130,39 @@
 }
 
 .flow-container {
-  min-height: 400px;
+  min-height: 500px;
+  max-height: 500px;
+  overflow-y: auto;
+  padding-right: 8px;
+}
+
+/* Özel scrollbar stilleri */
+.flow-container::-webkit-scrollbar {
+  width: 6px;
+}
+
+.flow-container::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 3px;
+}
+
+.flow-container::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
+.flow-container::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
 }
 
 .empty-flow {
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 400px;
+  height: 500px;
   border: 2px dashed #e2e8f0;
   border-radius: 12px;
+  overflow: hidden;
 }
 
 .empty-content {
@@ -162,16 +185,16 @@
 }
 
 .flow-step-container {
-  margin-bottom: 16px;
+  margin-bottom: 12px;
 }
 
 .flow-step {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 16px;
+  gap: 10px;
+  padding: 12px;
   border: 2px solid #e2e8f0;
-  border-radius: 12px;
+  border-radius: 8px;
   background: white;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -187,8 +210,8 @@
 }
 
 .step-number {
-  width: 32px;
-  height: 32px;
+  width: 28px;
+  height: 28px;
   background: #3b82f6;
   color: white;
   border-radius: 50%;
@@ -196,7 +219,7 @@
   align-items: center;
   justify-content: center;
   font-weight: 600;
-  font-size: 14px;
+  font-size: 12px;
 }
 
 .step-content {
