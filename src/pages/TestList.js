@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   Search, 
   Filter, 
@@ -15,62 +16,41 @@ import {
 import '../styles/TestList.css';
 
 const TestList = () => {
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterBrowser, setFilterBrowser] = useState('all');
+  const [tests, setTests] = useState([]);
 
-  const tests = [
-    {
-      id: 1,
-      name: 'User Login Flow',
-      description: 'Complete user authentication process test',
-      lastRun: '2 saat önce',
-      status: 'success',
-      browser: 'chrome',
-      duration: '2m 34s',
-      type: 'scheduled'
-    },
-    {
-      id: 2,
-      name: 'E-commerce Checkout',
-      description: 'Full checkout process including payment',
-      lastRun: '5 saat önce',
-      status: 'error',
-      browser: 'firefox',
-      duration: '4m 12s',
-      type: 'manual'
-    },
-    {
-      id: 3,
-      name: 'API Integration Test',
-      description: 'Testing API endpoints and responses',
-      lastRun: '1 gün önce',
-      status: 'success',
-      browser: 'chrome',
-      duration: '1m 45s',
-      type: 'scheduled'
-    },
-    {
-      id: 4,
-      name: 'Mobile Responsive Test',
-      description: 'Testing mobile responsive design',
-      lastRun: 'Hiç çalışmadı',
-      status: 'pending',
-      browser: 'safari',
-      duration: '--',
-      type: 'manual'
-    },
-    {
-      id: 5,
-      name: 'Search Functionality',
-      description: 'Testing search filters and results',
-      lastRun: '30 dakika önce',
-      status: 'running',
-      browser: 'chrome',
-      duration: '--',
-      type: 'manual'
-    }
-  ];
+  // Kaydedilmiş testleri yükle
+  useEffect(() => {
+    const loadSavedTests = () => {
+      try {
+        const savedTests = JSON.parse(localStorage.getItem('savedTestFlows') || '[]');
+
+        // Kaydedilmiş testleri default testlerle birleştir
+        const allTests = [...savedTests];
+        setTests(allTests);
+      } catch (error) {
+        console.error('Test yükleme hatası:', error);
+        setTests([]);
+      }
+    };
+
+    loadSavedTests();
+    
+    // Storage event listener ekle (farklı sekmelerde değişiklikleri dinlemek için)
+    const handleStorageChange = () => {
+      loadSavedTests();
+    };
+    
+    window.addEventListener('storage', handleStorageChange);
+    
+    // Cleanup
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+    };
+  }, []);
 
   const getBrowserIcon = (browser) => {
     switch (browser) {
@@ -97,7 +77,7 @@ const TestList = () => {
           <h1>🔍 Akışlar</h1>
           <p>Tüm test senaryolarınızı görüntüleyin ve yönetin</p>
         </div>
-        <button className="btn btn-primary">
+        <button className="btn btn-primary" onClick={() => navigate('/test-editor')}>
           <Plus size={16} />
           Yeni Test Oluştur
         </button>

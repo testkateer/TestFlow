@@ -273,6 +273,67 @@ const TestEditor = () => {
     input.click();
   };
 
+  const saveTestFlow = () => {
+    if (!testName.trim()) {
+      alert('❌ Test adı boş olamaz!');
+      return;
+    }
+
+    if (steps.length === 0) {
+      alert('❌ Test akışı boş olamaz! En az bir adım eklemelisiniz.');
+      return;
+    }
+
+    try {
+      // Mevcut kaydedilmiş testleri al
+      const savedTests = JSON.parse(localStorage.getItem('savedTestFlows') || '[]');
+      
+      // Yeni test verisi oluştur
+      const newTest = {
+        id: Date.now(),
+        name: testName,
+        description: `${steps.length} adımlı test akışı`,
+        steps: steps,
+        createdAt: new Date().toISOString(),
+        lastRun: 'Hiç çalışmadı',
+        status: 'pending',
+        browser: 'chrome',
+        duration: '--',
+        type: 'manual'
+      };
+
+      // Aynı isimde test var mı kontrol et
+      const existingTestIndex = savedTests.findIndex(test => test.name === testName);
+      
+      if (existingTestIndex !== -1) {
+        // Varolan testi güncelle
+        const shouldUpdate = window.confirm(`"${testName}" adında bir test zaten mevcut. Güncellemek ister misiniz?`);
+        if (shouldUpdate) {
+          savedTests[existingTestIndex] = {
+            ...savedTests[existingTestIndex],
+            ...newTest,
+            id: savedTests[existingTestIndex].id, // Orijinal ID'yi koru
+            updatedAt: new Date().toISOString()
+          };
+          alert(`✅ "${testName}" test akışı başarıyla güncellendi!`);
+        } else {
+          return;
+        }
+      } else {
+        // Yeni test ekle
+        savedTests.push(newTest);
+        alert(`✅ "${testName}" test akışı başarıyla kaydedildi!\n\nAkışlar sayfasından görüntüleyebilirsiniz.`);
+      }
+
+      // localStorage'a kaydet
+      localStorage.setItem('savedTestFlows', JSON.stringify(savedTests));
+      
+    } catch (error) {
+      console.error('Kaydetme hatası:', error);
+      alert(`❌ Kaydetme hatası: ${error.message}`);
+    }
+  };
+
   return (
     <div className="test-editor">
       <div className="editor-header">
@@ -302,7 +363,7 @@ const TestEditor = () => {
             <Play size={16} />
             {isRunning ? 'Test Çalışıyor...' : 'Testi Çalıştır'}
           </button>
-          <button className="btn btn-primary">
+          <button className="btn btn-primary" onClick={saveTestFlow}>
             <Save size={16} />
             Kaydet
           </button>
