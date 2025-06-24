@@ -12,6 +12,7 @@ import {
   Download,
   BarChart3
 } from 'lucide-react';
+import { downloadTestReport } from '../utils/reportUtils';
 import '../styles/Reports.css';
 
 const Reports = () => {
@@ -91,6 +92,10 @@ const Reports = () => {
 
   const handleViewReport = (reportId) => {
     navigate(`/report/${reportId}`);
+  };
+
+  const handleDownloadReport = (report) => {
+    downloadTestReport(report);
   };
 
   return (
@@ -249,7 +254,10 @@ const Reports = () => {
                         <Eye size={14} />
                         Görüntüle
                       </button>
-                      <button className="btn btn-secondary btn-sm">
+                      <button 
+                        className="btn btn-secondary btn-sm"
+                        onClick={() => handleDownloadReport(report)}
+                      >
                         <Download size={14} />
                         İndir
                       </button>

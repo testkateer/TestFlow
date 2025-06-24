@@ -15,6 +15,7 @@ import {
   RefreshCw,
   ExternalLink
 } from 'lucide-react';
+import { downloadTestReport } from '../utils/reportUtils';
 import '../styles/TestReport.css';
 
 const TestReport = () => {
@@ -161,6 +162,23 @@ const TestReport = () => {
     }
   };
 
+  const handleDownloadReport = () => {
+    try {
+      // localStorage'dan orijinal rapor verisini al
+      const savedReports = JSON.parse(localStorage.getItem('testReports') || '[]');
+      const originalReport = savedReports.find(r => r.id.toString() === id);
+      
+      if (originalReport) {
+        downloadTestReport(originalReport);
+      } else {
+        alert('Rapor verisi bulunamadı.');
+      }
+    } catch (error) {
+      console.error('Rapor indirme hatası:', error);
+      alert('Rapor indirilirken bir hata oluştu.');
+    }
+  };
+
   // Loading durumu
   if (loading) {
     return (
@@ -221,7 +239,7 @@ const TestReport = () => {
             <Share2 size={16} />
             Paylaş
           </button>
-          <button className="btn btn-secondary">
+          <button className="btn btn-secondary" onClick={handleDownloadReport}>
             <Download size={16} />
             Raporu İndir
           </button>
