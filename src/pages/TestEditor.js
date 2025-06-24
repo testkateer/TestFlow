@@ -145,6 +145,78 @@ const TestEditor = () => {
     setHasUnsavedChanges(true);
   };
 
+  const saveTestReport = (testResult) => {
+    try {
+      // Mevcut raporları al
+      const existingReports = JSON.parse(localStorage.getItem('testReports') || '[]');
+      
+      // Test durumunu daha detaylı analiz et
+      const totalSteps = testResult.totalSteps || steps.length;
+      const successfulSteps = testResult.successfulSteps || 0;
+      const completedSteps = testResult.completedSteps || (testResult.results ? testResult.results.length : 0);
+      
+      // Test durumunu belirle:
+      // - Tüm adımlar tamamlandı ve başarılıysa: success
+      // - Adımlar başarısız oldu veya tamamlanamadıysa: error
+      const isSuccess = testResult.success && 
+                       (completedSteps === totalSteps) && 
+                       (successfulSteps === totalSteps);
+      
+      // Yeni rapor verisi oluştur
+      const newReport = {
+        id: Date.now(),
+        testName: testName || 'İsimsiz Test',
+        description: `${steps.length} adımlı test akışı`,
+        status: isSuccess ? 'success' : 'error',
+        duration: testResult.duration || calculateTestDuration(testResult),
+        date: new Date().toLocaleDateString('tr-TR'),
+        time: new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' }),
+        passedSteps: successfulSteps,
+        totalSteps: totalSteps,
+        completedSteps: completedSteps,
+        trigger: 'Manuel',
+        results: testResult.results || [],
+        timestamp: new Date().toISOString()
+      };
+      
+      // Yeni raporu listeye ekle (en yeni en başta)
+      existingReports.unshift(newReport);
+      
+      // Maksimum 100 rapor tut (performans için)
+      if (existingReports.length > 100) {
+        existingReports.splice(100);
+      }
+      
+      // localStorage'a kaydet
+      localStorage.setItem('testReports', JSON.stringify(existingReports));
+      
+      console.log('Test raporu kaydedildi:', newReport);
+    } catch (error) {
+      console.error('Test raporu kaydetme hatası:', error);
+    }
+  };
+
+  const calculateTestDuration = (testResult) => {
+    if (!testResult.results || testResult.results.length === 0) {
+      return '0s';
+    }
+    
+    // İlk ve son adım arasındaki süreyi hesapla
+    const firstStep = new Date(testResult.results[0].timestamp);
+    const lastStep = new Date(testResult.results[testResult.results.length - 1].timestamp);
+    const durationMs = lastStep - firstStep;
+    
+    if (durationMs < 1000) {
+      return `${durationMs}ms`;
+    } else if (durationMs < 60000) {
+      return `${Math.round(durationMs / 1000)}s`;
+    } else {
+      const minutes = Math.floor(durationMs / 60000);
+      const seconds = Math.round((durationMs % 60000) / 1000);
+      return `${minutes}m ${seconds}s`;
+    }
+  };
+
   const runTest = async () => {
     if (steps.length === 0) {
       alert('Test çalıştırmak için en az bir adım eklemelisiniz!');
@@ -182,10 +254,19 @@ const TestEditor = () => {
       const result = await response.json();
       setTestResults(result);
       
-      if (result.success) {
-        alert(`Test başarıyla tamamlandı! ${result.successfulSteps}/${result.totalSteps} adım başarılı.`);
+      // Test sonucunu Reports sayfası için localStorage'a kaydet
+      saveTestReport(result);
+      
+      const totalSteps = result.totalSteps || steps.length;
+      const successfulSteps = result.successfulSteps || 0;
+      const completedSteps = result.completedSteps || (result.results ? result.results.length : 0);
+      
+      if (result.success && completedSteps === totalSteps && successfulSteps === totalSteps) {
+        alert(`✅ Test başarıyla tamamlandı!\n\n📊 Sonuç: ${successfulSteps}/${totalSteps} adım başarılı`);
+      } else if (completedSteps < totalSteps) {
+        alert(`⚠️ Test tamamlanamadı!\n\n📊 Sonuç: ${completedSteps}/${totalSteps} adım tamamlandı\n✅ Başarılı: ${successfulSteps}\n❌ Başarısız: ${completedSteps - successfulSteps}`);
       } else {
-        alert(`Test hatası: ${result.error}`);
+        alert(`❌ Test başarısız!\n\n📊 Sonuç: ${successfulSteps}/${totalSteps} adım başarılı\n${result.error ? `\nHata: ${result.error}` : ''}`);
       }
       
     } catch (error) {

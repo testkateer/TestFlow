@@ -6,6 +6,7 @@ import TestList from './pages/TestList';
 import TestEditor from './pages/TestEditor';
 import Scheduling from './pages/Scheduling';
 import TestReport from './pages/TestReport';
+import Reports from './pages/Reports';
 import Settings from './pages/Settings';
 
 function App() {
@@ -19,6 +20,7 @@ function App() {
           <Route path="/editor" element={<TestEditor />} />
           <Route path="/editor/:id" element={<TestEditor />} />
           <Route path="/scheduling" element={<Scheduling />} />
+          <Route path="/reports" element={<Reports />} />
           <Route path="/report/:id" element={<TestReport />} />
           <Route path="/settings" element={<Settings />} />
         </Routes>

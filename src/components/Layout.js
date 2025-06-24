@@ -6,6 +6,7 @@ import {
   Edit3, 
   Clock, 
   BarChart3, 
+  FileText,
   Settings,
   Plus,
   TestTube2
@@ -20,6 +21,7 @@ const Layout = ({ children }) => {
     { path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
     { path: '/tests', icon: List, label: 'Akışlar' },
     { path: '/scheduling', icon: Clock, label: 'Zamanlama' },
+    { path: '/reports', icon: FileText, label: 'Raporlar' },
     { path: '/settings', icon: Settings, label: 'Ayarlar' },
   ];
 

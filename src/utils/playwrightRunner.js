@@ -171,11 +171,16 @@ class PlaywrightTestRunner {
         }
       }
       
+      const successfulSteps = results.filter(r => r.result.success).length;
+      const allStepsCompleted = results.length === steps.length;
+      const allStepsSuccessful = successfulSteps === steps.length;
+      
       return {
-        success: true,
+        success: allStepsCompleted && allStepsSuccessful,
         results: results,
         totalSteps: steps.length,
-        successfulSteps: results.filter(r => r.result.success).length
+        successfulSteps: successfulSteps,
+        completedSteps: results.length
       };
       
     } catch (error) {

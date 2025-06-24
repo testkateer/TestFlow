@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { 
   ArrowLeft, 
   Calendar, 
@@ -17,136 +18,129 @@ import {
 import '../styles/TestReport.css';
 
 const TestReport = () => {
+  const { id } = useParams();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('overview');
+  const [testDetails, setTestDetails] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  const testDetails = {
-    id: 1,
-    name: 'E-commerce Checkout Flow',
-    description: 'Complete checkout process test including cart, payment and confirmation',
-    browser: 'Chrome 120.0',
-    resolution: '1920x1080',
-    createdDate: '15 Kasım 2024',
-    lastRun: '2 saat önce',
-    status: 'error',
-    duration: '4m 12s',
-    totalSteps: 8,
-    passedSteps: 6,
-    failedSteps: 2
+  useEffect(() => {
+    const loadTestReport = () => {
+      try {
+        const savedReports = JSON.parse(localStorage.getItem('testReports') || '[]');
+        const report = savedReports.find(r => r.id.toString() === id);
+        
+        if (report) {
+          // Rapor verisini TestReport formatına çevir
+          const formattedReport = {
+            id: report.id,
+            name: report.testName,
+            description: report.description,
+            browser: 'Chrome 120.0',
+            resolution: '1920x1080',
+            createdDate: report.date,
+            lastRun: `${report.date} ${report.time}`,
+            status: report.status,
+            duration: report.duration,
+            totalSteps: report.totalSteps,
+            passedSteps: report.passedSteps,
+            failedSteps: report.totalSteps - report.passedSteps
+          };
+          setTestDetails(formattedReport);
+        } else {
+          // Rapor bulunamadı
+          console.error('Rapor bulunamadı:', id);
+          setTestDetails(null);
+        }
+      } catch (error) {
+        console.error('Rapor yükleme hatası:', error);
+        setTestDetails(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (id) {
+      loadTestReport();
+    } else {
+      setLoading(false);
+    }
+  }, [id]);
+
+  // Gerçek test verilerinden stepDetails oluştur
+  const getStepDetailsFromReport = () => {
+    try {
+      const savedReports = JSON.parse(localStorage.getItem('testReports') || '[]');
+      const report = savedReports.find(r => r.id.toString() === id);
+      
+      if (report && report.results) {
+        return report.results.map((result, index) => ({
+          id: index + 1,
+          name: result.step?.name || `Adım ${index + 1}`,
+          type: result.step?.type || 'unknown',
+          status: result.result?.success ? 'success' : 'error',
+          duration: result.result?.duration || '0s',
+          description: result.result?.message || result.step?.config?.url || result.step?.config?.selector || 'Açıklama yok',
+          screenshot: true,
+          error: result.result?.success ? null : result.result?.error || result.result?.message
+        }));
+      }
+    } catch (error) {
+      console.error('Step details oluşturma hatası:', error);
+    }
+    
+    // Fallback - basit step listesi
+    const stepCount = testDetails?.totalSteps || 0;
+    const passedCount = testDetails?.passedSteps || 0;
+    
+    return Array.from({ length: stepCount }, (_, index) => ({
+      id: index + 1,
+      name: `Test Adımı ${index + 1}`,
+      type: 'unknown',
+      status: index < passedCount ? 'success' : 'error',
+      duration: '1.0s',
+      description: index < passedCount ? 'Başarıyla tamamlandı' : 'Adım başarısız oldu',
+      screenshot: true,
+      error: index >= passedCount ? 'Test adımı başarısız oldu' : null
+    }));
   };
 
-  const executionHistory = [
-    {
-      id: 1,
-      date: '2024-11-15 14:30',
-      status: 'error',
-      duration: '4m 12s',
-      trigger: 'Manuel'
-    },
-    {
-      id: 2,
-      date: '2024-11-15 09:00',
-      status: 'success',
-      duration: '3m 45s',
-      trigger: 'Zamanlama'
-    },
-    {
-      id: 3,
-      date: '2024-11-14 09:00',
-      status: 'success',
-      duration: '3m 52s',
-      trigger: 'Zamanlama'
-    },
-    {
-      id: 4,
-      date: '2024-11-13 18:00',
-      status: 'error',
-      duration: '2m 14s',
-      trigger: 'Manuel'
-    },
-    {
-      id: 5,
-      date: '2024-11-13 09:00',
-      status: 'success',
-      duration: '4m 01s',
-      trigger: 'Zamanlama'
-    }
-  ];
+  const stepDetails = getStepDetailsFromReport();
 
-  const stepDetails = [
-    {
-      id: 1,
-      name: 'Navigate to Homepage',
-      type: 'navigation',
-      status: 'success',
-      duration: '1.2s',
-      description: 'https://example-store.com',
-      screenshot: true
-    },
-    {
-      id: 2,
-      name: 'Search for Product',
-      type: 'input',
-      status: 'success',
-      duration: '0.8s',
-      description: 'Enter "wireless headphones" in search field',
-      screenshot: true
-    },
-    {
-      id: 3,
-      name: 'Select Product',
-      type: 'click',
-      status: 'success',
-      duration: '2.1s',
-      description: 'Click on first product result',
-      screenshot: true
-    },
-    {
-      id: 4,
-      name: 'Add to Cart',
-      type: 'click',
-      status: 'success',
-      duration: '1.5s',
-      description: 'Click "Add to Cart" button',
-      screenshot: true
-    },
-    {
-      id: 5,
-      name: 'Go to Checkout',
-      type: 'click',
-      status: 'success',
-      duration: '1.8s',
-      description: 'Navigate to checkout page',
-      screenshot: true
-    },
-    {
-      id: 6,
-      name: 'Fill Shipping Information',
-      type: 'input',
-      status: 'success',
-      duration: '3.2s',
-      description: 'Enter shipping address details',
-      screenshot: true
-    },
-    {
-      id: 7,
-      name: 'Select Payment Method',
-      type: 'click',
-      status: 'error',
-      duration: '0.5s',
-      description: 'Element not found: #payment-method-card',
-      screenshot: true,
-      error: 'NoSuchElementException: Unable to locate element: {"method":"css selector","selector":"#payment-method-card"}'
-    },
-    {
-      id: 8,
-      name: 'Complete Purchase',
-      type: 'click',
-      status: 'skipped',
-      duration: '0.0s',
-      description: 'Skipped due to previous failure',
-      screenshot: false
+  // Execution history'yi bu test için gerçek verilerden oluştur
+  const getExecutionHistory = () => {
+    try {
+      const savedReports = JSON.parse(localStorage.getItem('testReports') || '[]');
+      const currentTestReports = savedReports.filter(r => r.testName === testDetails?.name);
+      
+      return currentTestReports.slice(0, 5).map((report, index) => ({
+        id: report.id,
+        date: `${report.date} ${report.time}`,
+        status: report.status,
+        duration: report.duration,
+        trigger: report.trigger
+      }));
+    } catch (error) {
+      console.error('Execution history oluşturma hatası:', error);
+      return [{
+        id: testDetails?.id || 1,
+        date: testDetails?.lastRun || 'Bilinmiyor',
+        status: testDetails?.status || 'unknown',
+        duration: testDetails?.duration || '0s',
+        trigger: 'Manuel'
+      }];
     }
-  ];
+  };
+
+  const executionHistory = getExecutionHistory();
+
+  // Gerçek hata detaylarını al
+  const getErrorDetails = () => {
+    const failedSteps = stepDetails.filter(step => step.status === 'error' && step.error);
+    return failedSteps.length > 0 ? failedSteps[0] : null; // İlk hatayı göster
+  };
+
+  const errorDetails = getErrorDetails();
 
   const getStatusIcon = (status) => {
     switch (status) {
@@ -167,12 +161,54 @@ const TestReport = () => {
     }
   };
 
+  // Loading durumu
+  if (loading) {
+    return (
+      <div className="test-report-page">
+        <div className="loading-container" style={{ 
+          display: 'flex', 
+          justifyContent: 'center', 
+          alignItems: 'center', 
+          height: '400px',
+          flexDirection: 'column',
+          gap: '16px'
+        }}>
+          <div style={{ fontSize: '48px' }}>⏳</div>
+          <p>Rapor yükleniyor...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Rapor bulunamadı durumu
+  if (!testDetails) {
+    return (
+      <div className="test-report-page">
+        <div className="error-container" style={{ 
+          display: 'flex', 
+          justifyContent: 'center', 
+          alignItems: 'center', 
+          height: '400px',
+          flexDirection: 'column',
+          gap: '16px'
+        }}>
+          <div style={{ fontSize: '48px' }}>❌</div>
+          <h2>Rapor Bulunamadı</h2>
+          <p>Bu ID'ye sahip bir test raporu bulunamadı.</p>
+          <button className="btn btn-primary" onClick={() => navigate('/reports')}>
+            Raporlara Geri Dön
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="test-report-page">
       {/* Header */}
       <div className="report-header">
         <div className="header-navigation">
-          <button className="btn btn-secondary">
+          <button className="btn btn-secondary" onClick={() => navigate('/reports')}>
             <ArrowLeft size={16} />
             Geri
           </button>
@@ -306,25 +342,66 @@ const TestReport = () => {
               </div>
             </div>
 
-            <div className="error-details card">
-              <h3>🛑 Hata Detayları</h3>
-              <div className="error-info">
-                <div className="error-step">
-                  <strong>Adım 7:</strong> Select Payment Method
-                </div>
-                <div className="error-message">
-                  <code>NoSuchElementException: Unable to locate element: #payment-method-card</code>
-                </div>
-                <div className="error-suggestions">
-                  <h4>Öneriler:</h4>
-                  <ul>
-                    <li>Element seçicisini kontrol edin</li>
-                    <li>Sayfanın tamamen yüklendiğinden emin olun</li>
-                    <li>Bekleme süresi ekleyin</li>
-                  </ul>
+            {/* Hata Detayları - Sadece hata varsa göster */}
+            {errorDetails ? (
+              <div className="error-details card">
+                <h3>🛑 Hata Detayları</h3>
+                <div className="error-info">
+                  <div className="error-step">
+                    <strong>Adım {errorDetails.id}:</strong> {errorDetails.name}
+                  </div>
+                  <div className="error-message">
+                    <code>{errorDetails.error}</code>
+                  </div>
+                  <div className="error-suggestions">
+                    <h4>Öneriler:</h4>
+                    <ul>
+                      {errorDetails.type === 'click' && (
+                        <>
+                          <li>Element seçicisini kontrol edin</li>
+                          <li>Sayfanın tamamen yüklendiğinden emin olun</li>
+                          <li>Bekleme süresi ekleyin</li>
+                        </>
+                      )}
+                      {errorDetails.type === 'input' && (
+                        <>
+                          <li>Input alanının var olduğundan emin olun</li>
+                          <li>Element focus edilebilir durumda mı kontrol edin</li>
+                          <li>Sayfanın tamamen yüklendiğinden emin olun</li>
+                        </>
+                      )}
+                      {errorDetails.type === 'navigate' && (
+                        <>
+                          <li>URL'nin doğru olduğundan emin olun</li>
+                          <li>İnternet bağlantısını kontrol edin</li>
+                          <li>Sayfanın erişilebilir olduğundan emin olun</li>
+                        </>
+                      )}
+                      {!['click', 'input', 'navigate'].includes(errorDetails.type) && (
+                        <>
+                          <li>Adım konfigürasyonunu kontrol edin</li>
+                          <li>Element seçicilerini doğrulayın</li>
+                          <li>Bekleme süresi ekleyin</li>
+                        </>
+                      )}
+                    </ul>
+                  </div>
                 </div>
               </div>
-            </div>
+            ) : (
+              <div className="success-details card">
+                <h3>✅ Test Başarısı</h3>
+                <div className="success-info">
+                  <div className="success-message">
+                    🎉 Tüm test adımları başarıyla tamamlandı!
+                  </div>
+                  <div className="success-details-content">
+                    <p>Bu test çalıştırmasında herhangi bir hata ile karşılaşılmadı.</p>
+                    <p>Tüm adımlar beklenen şekilde çalıştı ve test başarılı sayıldı.</p>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="quick-actions card">
