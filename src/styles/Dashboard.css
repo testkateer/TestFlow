@@ -182,22 +182,7 @@
   color: #64748b;
 }
 
-.quick-actions {
-  margin-top: 32px;
-}
 
-.quick-actions h3 {
-  font-size: 18px;
-  font-weight: 600;
-  color: #1e293b;
-  margin-bottom: 16px;
-}
-
-.action-buttons {
-  display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
-}
 
 @media (max-width: 768px) {
   .dashboard-content {
@@ -206,10 +191,6 @@
   
   .summary-grid {
     grid-template-columns: 1fr;
-  }
-  
-  .action-buttons {
-    flex-direction: column;
   }
   
   .test-item,

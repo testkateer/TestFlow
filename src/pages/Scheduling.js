@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { 
-  Plus, 
   Clock, 
   Calendar, 
   Play, 
@@ -85,10 +84,6 @@ const Scheduling = () => {
           <h1>⏰ Zamanlama</h1>
           <p>Testlerin otomatik çalıştırma zamanlarını yönetin</p>
         </div>
-        <button className="btn btn-primary">
-          <Plus size={16} />
-          Yeni Zamanlama
-        </button>
       </div>
 
       {/* Tab Navigation */}

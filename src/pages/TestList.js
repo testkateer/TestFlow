@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { 
   Search, 
   Filter, 
-  Plus, 
   Play, 
   Edit, 
   Clock, 
@@ -77,10 +76,6 @@ const TestList = () => {
           <h1>🔍 Akışlar</h1>
           <p>Tüm test senaryolarınızı görüntüleyin ve yönetin</p>
         </div>
-        <button className="btn btn-primary" onClick={() => navigate('/test-editor')}>
-          <Plus size={16} />
-          Yeni Test Oluştur
-        </button>
       </div>
 
       {/* Arama ve Filtreler */}

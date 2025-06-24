@@ -159,23 +159,6 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* Hızlı Aksiyonlar */}
-      <div className="quick-actions card">
-        <h3>🚀 Hızlı Aksiyonlar</h3>
-        <div className="action-buttons">
-          <button className="btn btn-primary">
-            <PlayCircle size={16} />
-            Yeni Test Çalıştır
-          </button>
-          <button className="btn btn-secondary">
-            <Calendar size={16} />
-            Test Zamanla
-          </button>
-          <button className="btn btn-secondary">
-            Rapor Oluştur
-          </button>
-        </div>
-      </div>
     </div>
   );
 };
