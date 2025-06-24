@@ -7,7 +7,7 @@ import {
   Clock, 
   BarChart3, 
   Settings,
-  Play,
+  Plus,
   TestTube2
 } from 'lucide-react';
 import './Layout.css';
@@ -16,9 +16,9 @@ const Layout = ({ children }) => {
   const location = useLocation();
 
   const navItems = [
+    { path: '/editor', icon: Plus, label: 'Yeni Akış' },
     { path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
     { path: '/tests', icon: List, label: 'Akışlar' },
-    { path: '/editor', icon: Edit3, label: 'Akış Oluştur' },
     { path: '/scheduling', icon: Clock, label: 'Zamanlama' },
     { path: '/settings', icon: Settings, label: 'Ayarlar' },
   ];
@@ -37,12 +37,13 @@ const Layout = ({ children }) => {
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = location.pathname === item.path;
+            const isNewFlow = item.label === 'Yeni Akış';
             
             return (
               <Link
                 key={item.path}
                 to={item.path}
-                className={`nav-item ${isActive ? 'active' : ''}`}
+                className={`nav-item ${isActive ? 'active' : ''} ${isNewFlow ? 'new-flow' : ''}`}
               >
                 <Icon size={20} />
                 <span>{item.label}</span>
@@ -51,12 +52,7 @@ const Layout = ({ children }) => {
           })}
         </div>
 
-        <div className="sidebar-footer">
-          <button className="btn btn-primary sidebar-action">
-            <Play size={16} />
-            Hızlı Test
-          </button>
-        </div>
+
       </nav>
 
       <main className="main-content">

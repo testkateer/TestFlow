@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { 
   Save, 
   Play, 
@@ -18,11 +19,14 @@ import {
 import '../styles/TestEditor.css';
 
 const TestEditor = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
   const [testName, setTestName] = useState('Yeni Test Senaryosu');
   const [selectedStep, setSelectedStep] = useState(null);
   const [steps, setSteps] = useState([]);
   const [isRunning, setIsRunning] = useState(false);
   const [testResults, setTestResults] = useState(null);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
   const stepTypes = [
     { id: 'navigate', name: 'Git', icon: Navigation, description: 'Belirtilen URL\'ye git' },
@@ -32,6 +36,60 @@ const TestEditor = () => {
     { id: 'verify', name: 'Doğrula', icon: Eye, description: 'Element varlığını doğrula' },
     { id: 'refresh', name: 'Yenile', icon: RefreshCw, description: 'Sayfayı yenile' }
   ];
+
+  // Steps değiştiğinde unsaved changes durumunu güncelle
+  useEffect(() => {
+    setHasUnsavedChanges(steps.length > 0);
+  }, [steps]);
+
+  // Sayfa kapatma/yenileme durumunda uyarı
+  useEffect(() => {
+    const handleBeforeUnload = (event) => {
+      if (hasUnsavedChanges) {
+        event.preventDefault();
+        event.returnValue = 'Kaydedilmemiş değişiklikleriniz var. Sayfadan çıkmak istediğinizden emin misiniz?';
+        return event.returnValue;
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [hasUnsavedChanges]);
+
+  // Sayfa içi navigasyon kontrolü
+  useEffect(() => {
+    const checkUnsavedChanges = () => {
+      if (hasUnsavedChanges) {
+        const shouldLeave = window.confirm(
+          'Kaydedilmemiş değişiklikleriniz var. Bu sayfadan çıkmak istediğinizden emin misiniz?\n\n' +
+          'Değişikliklerinizi kaybetmemek için önce "Kaydet" butonuna tıklayabilirsiniz.'
+        );
+        return shouldLeave;
+      }
+      return true;
+    };
+
+    // Sayfa değişim kontrolü için custom handler
+    const originalPushState = window.history.pushState;
+    const originalReplaceState = window.history.replaceState;
+
+    window.history.pushState = function(...args) {
+      if (checkUnsavedChanges()) {
+        originalPushState.apply(this, args);
+      }
+    };
+
+    window.history.replaceState = function(...args) {
+      if (checkUnsavedChanges()) {
+        originalReplaceState.apply(this, args);
+      }
+    };
+
+    return () => {
+      window.history.pushState = originalPushState;
+      window.history.replaceState = originalReplaceState;
+    };
+  }, [hasUnsavedChanges]);
 
   const addStep = (stepType) => {
     const newStep = {
@@ -82,6 +140,9 @@ const TestEditor = () => {
         config: { ...prev.config, ...newConfig }
       }));
     }
+    
+    // Konfigürasyon değişikliği yapıldığında unsaved changes işaretle
+    setHasUnsavedChanges(true);
   };
 
   const runTest = async () => {
@@ -141,56 +202,7 @@ const TestEditor = () => {
     }
   };
 
-  const testSingleStep = async (step) => {
-    if (!step || !step.config.url) {
-      alert('URL boş olamaz!');
-      return;
-    }
 
-    setIsRunning(true);
-
-    try {
-      const response = await fetch('/api/run-single-step', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ step })
-      });
-      
-      // Server bağlantı kontrolü
-      if (!response.ok) {
-        throw new Error(`Server hatası: ${response.status} - ${response.statusText}`);
-      }
-
-      // Content-Type kontrolü
-      const contentType = response.headers.get('content-type');
-      if (!contentType || !contentType.includes('application/json')) {
-        const text = await response.text();
-        throw new Error(`Server JSON dönmedi. Yanıt: ${text.substring(0, 100)}...`);
-      }
-      
-      const result = await response.json();
-      
-      if (result.success) {
-        alert(`✅ Git adımı başarılı!\n${result.message}`);
-      } else {
-        alert(`❌ Git adımı başarısız!\n${result.message}`);
-      }
-      
-    } catch (error) {
-      console.error('Tek adım test hatası:', error);
-      
-      // Hata mesajına server durum kontrolü ekle
-      if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
-        alert(`❌ Server bağlantı hatası!\n\nLütfen şunları kontrol edin:\n1. 'npm run server' komutu ile server'ı başlattınız mı?\n2. Server 3001 portunda çalışıyor mu?\n\nHata: ${error.message}`);
-      } else {
-        alert(`❌ Tek adım test hatası: ${error.message}`);
-      }
-    } finally {
-      setIsRunning(false);
-    }
-  };
 
   const exportTestFlow = () => {
     try {
@@ -207,14 +219,14 @@ const TestEditor = () => {
       
       const link = document.createElement('a');
       link.href = url;
-      link.download = `${testName.replace(/\s+/g, '_')}_test_flow.json`;
+      link.download = `${testName.replace(/\s+/g, '_')}.json`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
       
       URL.revokeObjectURL(url);
       
-      alert(`✅ Test akışı başarıyla dışa aktarıldı!\nDosya adı: ${testName.replace(/\s+/g, '_')}_test_flow.json`);
+      alert(`✅ Test akışı başarıyla dışa aktarıldı!\nDosya adı: ${testName.replace(/\s+/g, '_')}.json`);
     } catch (error) {
       console.error('Dışa aktarma hatası:', error);
       alert(`❌ Dışa aktarma hatası: ${error.message}`);
@@ -328,6 +340,9 @@ const TestEditor = () => {
       // localStorage'a kaydet
       localStorage.setItem('savedTestFlows', JSON.stringify(savedTests));
       
+      // Kaydetme başarılı olduğunda unsaved changes'i temizle
+      setHasUnsavedChanges(false);
+      
     } catch (error) {
       console.error('Kaydetme hatası:', error);
       alert(`❌ Kaydetme hatası: ${error.message}`);
@@ -338,12 +353,19 @@ const TestEditor = () => {
     <div className="test-editor">
       <div className="editor-header">
         <div className="header-content">
-          <input 
-            type="text" 
-            value={testName} 
-            onChange={(e) => setTestName(e.target.value)}
-            className="test-name-input"
-          />
+          <div className="test-name-wrapper">
+            <input 
+              type="text" 
+              value={testName} 
+              onChange={(e) => {
+                setTestName(e.target.value);
+                setHasUnsavedChanges(true);
+              }}
+              className="test-name-input"
+              placeholder="Test adı girin..."
+            />
+            <Edit size={18} className="edit-icon" />
+          </div>
         </div>
         <div className="header-actions">
           <button className="btn btn-secondary" onClick={importTestFlow}>
@@ -354,6 +376,10 @@ const TestEditor = () => {
             <Download size={16} />
             Dışa Aktar
           </button>
+          <button className="btn btn-primary" onClick={saveTestFlow}>
+            <Save size={16} />
+            Kaydet
+          </button>
           <button 
             className={`btn btn-success ${isRunning ? 'disabled' : ''}`}
             onClick={runTest}
@@ -361,10 +387,6 @@ const TestEditor = () => {
           >
             <Play size={16} />
             {isRunning ? 'Test Çalışıyor...' : 'Testi Çalıştır'}
-          </button>
-          <button className="btn btn-primary" onClick={saveTestFlow}>
-            <Save size={16} />
-            Kaydet
           </button>
         </div>
       </div>
@@ -453,7 +475,6 @@ const TestEditor = () => {
                       </div>
                       {index < steps.length - 1 && (
                         <div className="flow-connector">
-                          <div className="connector-line"></div>
                           <div className="connector-arrow">↓</div>
                         </div>
                       )}
@@ -478,27 +499,15 @@ const TestEditor = () => {
               
               <div className="config-form">
                 {selectedStep.type === 'navigate' && (
-                  <>
-                    <div className="form-group">
-                      <label>URL:</label>
-                      <input
-                        type="text"
-                        value={selectedStep.config.url || ''}
-                        onChange={(e) => updateStepConfig(selectedStep.id, { url: e.target.value })}
-                        placeholder="https://example.com"
-                      />
-                    </div>
-                    <div className="form-group">
-                      <button 
-                        className="btn btn-secondary btn-small"
-                        onClick={() => testSingleStep(selectedStep)}
-                        disabled={isRunning || !selectedStep.config.url}
-                      >
-                        <Play size={14} />
-                        Bu Adımı Test Et
-                      </button>
-                    </div>
-                  </>
+                  <div className="form-group">
+                    <label>URL:</label>
+                    <input
+                      type="text"
+                      value={selectedStep.config.url || ''}
+                      onChange={(e) => updateStepConfig(selectedStep.id, { url: e.target.value })}
+                      placeholder="https://example.com"
+                    />
+                  </div>
                 )}
                 
                 {selectedStep.type === 'click' && (

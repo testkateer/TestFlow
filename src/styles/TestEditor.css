@@ -18,6 +18,12 @@
   flex: 1;
 }
 
+.test-name-wrapper {
+  position: relative;
+  display: inline-block;
+  margin-bottom: 8px;
+}
+
 .test-name-input {
   font-size: 28px;
   font-weight: 700;
@@ -33,6 +39,20 @@
 
 .test-name-input:focus {
   border-bottom-color: #3b82f6;
+}
+
+.edit-icon {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #64748b;
+  pointer-events: none;
+  transition: color 0.2s ease;
+}
+
+.test-name-wrapper:hover .edit-icon {
+  color: #3b82f6;
 }
 
 .header-content p {
@@ -276,16 +296,12 @@
   margin: 8px 0;
 }
 
-.connector-line {
-  width: 2px;
-  height: 20px;
-  background: #e2e8f0;
-}
 
 .connector-arrow {
   color: #64748b;
-  font-size: 12px;
+  font-size: 18px;
   margin-top: -4px;
+  font-weight: 800;
 }
 
 /* Config Panel */
