@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { 
-  ArrowLeft, 
-  Calendar, 
-  Clock, 
-  Download, 
-  CheckCircle, 
-  XCircle, 
+import {
+  ArrowLeft,
+  Calendar,
+  Clock,
+  Download,
+  CheckCircle,
+  XCircle,
   AlertCircle,
   Image,
   Video,
@@ -29,7 +29,7 @@ const TestReport = () => {
       try {
         const savedReports = JSON.parse(localStorage.getItem('testReports') || '[]');
         const report = savedReports.find(r => r.id.toString() === id);
-        
+
         if (report) {
           // Rapor verisini TestReport formatına çevir
           const formattedReport = {
@@ -72,7 +72,7 @@ const TestReport = () => {
     try {
       const savedReports = JSON.parse(localStorage.getItem('testReports') || '[]');
       const report = savedReports.find(r => r.id.toString() === id);
-      
+
       if (report && report.results) {
         return report.results.map((result, index) => ({
           id: index + 1,
@@ -80,19 +80,21 @@ const TestReport = () => {
           type: result.step?.type || 'unknown',
           status: result.result?.success ? 'success' : 'error',
           duration: result.result?.duration || '0s',
-          description: result.result?.message || result.step?.config?.url || result.step?.config?.selector || 'Açıklama yok',
+          description: result.result?.success
+            ? (result.result?.message || result.step?.config?.url || result.step?.config?.selector || 'Başarıyla tamamlandı')
+            : (result.step?.config?.url || result.step?.config?.selector || 'Test adımı'),
           screenshot: true,
-          error: result.result?.success ? null : result.result?.error || result.result?.message
+          error: result.result?.success ? null : (result.result?.error || result.result?.message)
         }));
       }
     } catch (error) {
       console.error('Step details oluşturma hatası:', error);
     }
-    
+
     // Fallback - basit step listesi
     const stepCount = testDetails?.totalSteps || 0;
     const passedCount = testDetails?.passedSteps || 0;
-    
+
     return Array.from({ length: stepCount }, (_, index) => ({
       id: index + 1,
       name: `Test Adımı ${index + 1}`,
@@ -112,7 +114,7 @@ const TestReport = () => {
     try {
       const savedReports = JSON.parse(localStorage.getItem('testReports') || '[]');
       const currentTestReports = savedReports.filter(r => r.testName === testDetails?.name);
-      
+
       return currentTestReports.slice(0, 5).map((report, index) => ({
         id: report.id,
         date: `${report.date} ${report.time}`,
@@ -166,7 +168,7 @@ const TestReport = () => {
       // localStorage'dan orijinal rapor verisini al
       const savedReports = JSON.parse(localStorage.getItem('testReports') || '[]');
       const originalReport = savedReports.find(r => r.id.toString() === id);
-      
+
       if (originalReport) {
         downloadTestReport(originalReport);
       } else {
@@ -178,14 +180,63 @@ const TestReport = () => {
     }
   };
 
+  const handleRerunTest = () => {
+    try {
+      // localStorage'dan orijinal rapor verisini al
+      const savedReports = JSON.parse(localStorage.getItem('testReports') || '[]');
+      const originalReport = savedReports.find(r => r.id.toString() === id);
+
+      if (originalReport && originalReport.results && originalReport.results.length > 0) {
+        // Orijinal test adımlarını yeniden oluştur
+        const originalSteps = originalReport.results.map((result, index) => ({
+          id: Date.now() + index, // Yeni ID'ler oluştur
+          type: result.step?.type || 'unknown',
+          name: result.step?.name || `Adım ${index + 1}`,
+          icon: getStepIcon(result.step?.type),
+          config: result.step?.config || {}
+        }));
+
+        // Test adımlarını localStorage'a geçici olarak kaydet
+        const tempData = {
+          testName: originalReport.testName,
+          steps: originalSteps
+        };
+        localStorage.setItem('tempTestRerun', JSON.stringify(tempData));
+
+        // TestEditor sayfasına yönlendir
+        setTimeout(() => {
+          navigate('/editor?rerun=true');
+        }, 100);
+      } else {
+        alert('Test adımları bulunamadı. Test tekrar çalıştırılamıyor.');
+      }
+    } catch (error) {
+      console.error('Test tekrar çalıştırma hatası:', error);
+      alert('Test tekrar çalıştırılırken bir hata oluştu.');
+    }
+  };
+
+  const getStepIcon = (stepType) => {
+    // TestEditor'daki stepTypes ile uyumlu icon mapping
+    const iconMap = {
+      'navigate': 'Navigation',
+      'click': 'MousePointer',
+      'input': 'Type',
+      'wait': 'Clock',
+      'verify': 'Eye',
+      'refresh': 'RefreshCw'
+    };
+    return iconMap[stepType] || 'AlertCircle';
+  };
+
   // Loading durumu
   if (loading) {
     return (
       <div className="test-report-page">
-        <div className="loading-container" style={{ 
-          display: 'flex', 
-          justifyContent: 'center', 
-          alignItems: 'center', 
+        <div className="loading-container" style={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
           height: '400px',
           flexDirection: 'column',
           gap: '16px'
@@ -201,10 +252,10 @@ const TestReport = () => {
   if (!testDetails) {
     return (
       <div className="test-report-page">
-        <div className="error-container" style={{ 
-          display: 'flex', 
-          justifyContent: 'center', 
-          alignItems: 'center', 
+        <div className="error-container" style={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
           height: '400px',
           flexDirection: 'column',
           gap: '16px'
@@ -234,11 +285,20 @@ const TestReport = () => {
           </div>
         </div>
         <div className="header-actions">
+          <button className="btn btn-secondary">
+            <Video size={16} />
+            Video Kaydını İzle
+          </button>
+          <button className="btn btn-secondary">
+            <Download size={16} />
+            Ekran Görüntülerini İndir
+          </button>
+
           <button className="btn btn-secondary" onClick={handleDownloadReport}>
             <Download size={16} />
             Raporu İndir
           </button>
-          <button className="btn btn-primary">
+          <button className="btn btn-primary" onClick={handleRerunTest}>
             <RefreshCw size={16} />
             Tekrar Çalıştır
           </button>
@@ -296,25 +356,25 @@ const TestReport = () => {
 
       {/* Tab Navigation */}
       <div className="tab-navigation">
-        <button 
+        <button
           className={`tab-btn ${activeTab === 'overview' ? 'active' : ''}`}
           onClick={() => setActiveTab('overview')}
         >
           📋 Genel Bakış
         </button>
-        <button 
+        <button
           className={`tab-btn ${activeTab === 'steps' ? 'active' : ''}`}
           onClick={() => setActiveTab('steps')}
         >
           🔄 Adım Detayları
         </button>
-        <button 
+        <button
           className={`tab-btn ${activeTab === 'history' ? 'active' : ''}`}
           onClick={() => setActiveTab('history')}
         >
           📊 Çalıştırma Geçmişi
         </button>
-        <button 
+        <button
           className={`tab-btn ${activeTab === 'media' ? 'active' : ''}`}
           onClick={() => setActiveTab('media')}
         >
@@ -346,10 +406,10 @@ const TestReport = () => {
                   <span>{Math.round((testDetails.passedSteps / testDetails.totalSteps) * 100)}%</span>
                 </div>
               </div>
-              
+
               <div className="progress-bar">
-                <div 
-                  className="progress-fill success" 
+                <div
+                  className="progress-fill success"
                   style={{ width: `${(testDetails.passedSteps / testDetails.totalSteps) * 100}%` }}
                 ></div>
               </div>
@@ -416,28 +476,6 @@ const TestReport = () => {
               </div>
             )}
           </div>
-
-          <div className="quick-actions card">
-            <h3>🚀 Hızlı Aksiyonlar</h3>
-            <div className="action-buttons">
-              <button className="btn btn-primary">
-                <RefreshCw size={16} />
-                Testi Tekrar Çalıştır
-              </button>
-              <button className="btn btn-secondary">
-                <ExternalLink size={16} />
-                Editörde Aç
-              </button>
-              <button className="btn btn-secondary">
-                <Download size={16} />
-                Ekran Görüntülerini İndir
-              </button>
-              <button className="btn btn-secondary">
-                <Video size={16} />
-                Video Kaydını İzle
-              </button>
-            </div>
-          </div>
         </div>
       )}
 
@@ -460,7 +498,7 @@ const TestReport = () => {
                       <div className="step-duration">{step.duration}</div>
                     </div>
                     <div className="step-description">{step.description}</div>
-                    {step.error && (
+                    {step.error && step.status === 'error' && (
                       <div className="step-error">
                         <strong>Hata:</strong> <code>{step.error}</code>
                       </div>

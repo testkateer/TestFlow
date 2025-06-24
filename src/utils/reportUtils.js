@@ -37,10 +37,15 @@
           reportText += `\nAdım ${stepNum}: ${step.name || 'İsimsiz Adım'}\n`;
           reportText += `Tür: ${step.type || 'Bilinmiyor'}\n`;
           reportText += `Durum: ${status} ${stepResult.success ? 'Başarılı' : 'Başarısız'}\n`;
-          reportText += `Açıklama: ${stepResult.message || step.config?.url || step.config?.selector || 'Açıklama yok'}\n`;
           
-          if (!stepResult.success && stepResult.error) {
-            reportText += `❌ Hata: ${stepResult.error}\n`;
+          // Açıklama ve hata ayrımı
+          if (stepResult.success) {
+            reportText += `Açıklama: ${stepResult.message || step.config?.url || step.config?.selector || 'Başarıyla tamamlandı'}\n`;
+          } else {
+            reportText += `Açıklama: ${step.config?.url || step.config?.selector || 'Test adımı'}\n`;
+            if (stepResult.error || stepResult.message) {
+              reportText += `❌ Hata: ${stepResult.error || stepResult.message}\n`;
+            }
           }
           
           reportText += `Zaman: ${new Date(result.timestamp).toLocaleString('tr-TR')}\n`;

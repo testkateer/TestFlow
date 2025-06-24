@@ -14,7 +14,8 @@ import {
   RefreshCw,
   Plus,
   Trash2,
-  Edit
+  Edit,
+  AlertCircle
 } from 'lucide-react';
 import '../styles/TestEditor.css';
 
@@ -41,6 +42,47 @@ const TestEditor = () => {
   useEffect(() => {
     setHasUnsavedChanges(steps.length > 0);
   }, [steps]);
+
+  // Sayfa yüklendiğinde rerun parametresi kontrolü
+  useEffect(() => {
+    const urlParams = new URLSearchParams(location.search);
+    const isRerun = urlParams.get('rerun') === 'true';
+    
+    if (isRerun) {
+      try {
+        // Geçici test verilerini yükle
+        const tempTestData = localStorage.getItem('tempTestRerun');
+        if (tempTestData) {
+          const { testName: rerunTestName, steps: rerunSteps } = JSON.parse(tempTestData);
+          
+          // Icon'ları doğru şekilde map et
+          const stepsWithIcons = rerunSteps.map(step => {
+            const stepType = stepTypes.find(type => type.id === step.type);
+            return {
+              ...step,
+              icon: stepType ? stepType.icon : AlertCircle
+            };
+          });
+          
+          setTestName(rerunTestName + ' (Tekrar)');
+          setSteps(stepsWithIcons);
+          setHasUnsavedChanges(true);
+          
+          // Geçici veriyi temizle
+          localStorage.removeItem('tempTestRerun');
+          
+          // URL'den rerun parametresini temizle
+          const newUrl = window.location.pathname;
+          window.history.replaceState({}, '', newUrl);
+          
+          console.log('Test tekrar çalıştırma için yüklendi:', rerunTestName);
+        }
+      } catch (error) {
+        console.error('Test tekrar yükleme hatası:', error);
+        alert('Test tekrar yüklenirken bir hata oluştu.');
+      }
+    }
+     }, [location.search, stepTypes]);
 
   // Sayfa kapatma/yenileme durumunda uyarı
   useEffect(() => {
