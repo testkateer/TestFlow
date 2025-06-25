@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, 
   List, 
@@ -15,6 +15,22 @@ import './Layout.css';
 
 const Layout = ({ children }) => {
   const location = useLocation();
+  const navigate = useNavigate();
+
+  // Navigasyon öncesi TestEditor unsaved changes kontrolü
+  const handleNavigation = async (e, targetPath) => {
+    e.preventDefault();
+    
+    // Sadece TestEditor sayfasındayken kontrol et
+    if (location.pathname === '/editor' && window.checkTestEditorUnsavedChanges) {
+      const canLeave = await window.checkTestEditorUnsavedChanges();
+      if (canLeave) {
+        navigate(targetPath);
+      }
+    } else {
+      navigate(targetPath);
+    }
+  };
 
   const navItems = [
     { path: '/editor', icon: Plus, label: 'Yeni Akış' },
@@ -46,6 +62,7 @@ const Layout = ({ children }) => {
                 key={item.path}
                 to={item.path}
                 className={`nav-item ${isActive ? 'active' : ''} ${isNewFlow ? 'new-flow' : ''}`}
+                onClick={(e) => handleNavigation(e, item.path)}
               >
                 <Icon size={20} />
                 <span>{item.label}</span>

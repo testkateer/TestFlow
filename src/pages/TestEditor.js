@@ -144,9 +144,10 @@ const TestEditor = () => {
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, [hasUnsavedChanges]);
 
-  // Sayfa içi navigasyon kontrolü
+  // Sayfa değişim kontrolü için global fonksiyon ekle
   useEffect(() => {
-    const checkUnsavedChanges = async () => {
+    // Global window objesine TestEditor'ın unsaved changes kontrolünü ekle
+    window.checkTestEditorUnsavedChanges = async () => {
       if (hasUnsavedChanges) {
         const shouldLeave = await showConfirm({
           title: 'Kaydedilmemiş Değişiklikler',
@@ -160,29 +161,9 @@ const TestEditor = () => {
       return true;
     };
 
-    // Sayfa değişim kontrolü için custom handler
-    const originalPushState = window.history.pushState;
-    const originalReplaceState = window.history.replaceState;
-
-    window.history.pushState = function(...args) {
-      checkUnsavedChanges().then(shouldLeave => {
-        if (shouldLeave) {
-          originalPushState.apply(this, args);
-        }
-      });
-    };
-
-    window.history.replaceState = function(...args) {
-      checkUnsavedChanges().then(shouldLeave => {
-        if (shouldLeave) {
-          originalReplaceState.apply(this, args);
-        }
-      });
-    };
-
+    // Cleanup - component unmount olduğunda global fonksiyonu temizle
     return () => {
-      window.history.pushState = originalPushState;
-      window.history.replaceState = originalReplaceState;
+      delete window.checkTestEditorUnsavedChanges;
     };
   }, [hasUnsavedChanges, showConfirm]);
 
