@@ -20,7 +20,9 @@
 
 .test-name-wrapper {
   position: relative;
-  display: inline-block;
+  display: flex;
+  align-items: center;
+  gap: 8px;
   margin-bottom: 8px;
 }
 
@@ -35,6 +37,9 @@
   outline: none;
   border-bottom: 2px solid transparent;
   transition: border-color 0.2s ease;
+  flex: 1;
+  max-width: 400px;
+  min-width: 200px;
 }
 
 .test-name-input:focus {
@@ -42,13 +47,10 @@
 }
 
 .edit-icon {
-  position: absolute;
-  right: 8px;
-  top: 50%;
-  transform: translateY(-50%);
   color: #64748b;
   pointer-events: none;
   transition: color 0.2s ease;
+  flex-shrink: 0;
 }
 
 .test-name-wrapper:hover .edit-icon {

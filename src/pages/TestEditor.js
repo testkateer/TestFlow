@@ -376,6 +376,7 @@ const TestEditor = () => {
       <div className="editor-header">
         <div className="header-content">
           <div className="test-name-wrapper">
+            <Edit size={18} className="edit-icon" />
             <input 
               type="text" 
               value={testName} 
@@ -385,7 +386,6 @@ const TestEditor = () => {
               className="test-name-input"
               placeholder="Test adı girin..."
             />
-            <Edit size={18} className="edit-icon" />
           </div>
         </div>
         <div className="header-actions">
