@@ -1,7 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  TrendingUp, 
-  TrendingDown, 
   Calendar, 
   Clock, 
   PlayCircle,
@@ -10,7 +8,8 @@ import {
   AlertCircle,
   RefreshCw
 } from 'lucide-react';
-import { getFromStorage } from '../utils/storageUtils';
+import { getFromStorage, setToStorage } from '../utils/storageUtils';
+import { clearExpiredRunningTests } from '../utils/testRunner';
 import { formatRelativeTime } from '../utils/dateUtils';
 import '../styles/Dashboard.css';
 
@@ -21,6 +20,20 @@ const Dashboard = () => {
   const [scheduledTests, setScheduledTests] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [runningTestsCount, setRunningTestsCount] = useState(0);
+
+  // Gerçek zamanlı çalışan testleri takip et
+  const checkRunningTests = () => {
+    try {
+      // Süresi geçmiş testleri temizle ve güncel sayıyı al
+      const currentRunningCount = clearExpiredRunningTests();
+      setRunningTestsCount(currentRunningCount);
+      return currentRunningCount;
+    } catch (error) {
+      console.error('Çalışan testleri kontrol etme hatası:', error);
+      return 0;
+    }
+  };
 
   // Gerçek veri yükleme fonksiyonları - storage utility kullan
   const loadTestSummaryFromStorage = () => {
@@ -41,59 +54,24 @@ const Dashboard = () => {
       const totalTests = recentReports.length; // Çalıştırılan toplam test sayısı
       const successfulTests = recentReports.filter(report => report.status === 'success').length;
       const failedTests = recentReports.filter(report => report.status === 'error').length;
-      const runningTests = recentReports.filter(report => report.status === 'running').length;
-      
-      // Önceki değerlerle karşılaştırmak için (basit bir delta hesaplaması)
-      const lastWeekReports = testReports.filter(report => {
-        const reportDate = new Date(report.timestamp || report.date);
-        const oneWeekAgo = new Date();
-        oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
-        const twoWeeksAgo = new Date();
-        twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14);
-        return reportDate >= twoWeeksAgo && reportDate < oneWeekAgo;
-      });
-      
-      const lastWeekSuccessful = lastWeekReports.filter(report => report.status === 'success').length;
-      const lastWeekFailed = lastWeekReports.filter(report => report.status === 'error').length;
-      const lastWeekRunning = lastWeekReports.filter(report => report.status === 'running').length;
-      
-      // Önceki toplam test sayısını localStorage'dan al
-      const previousTotalTests = parseInt(localStorage.getItem('previousTotalTests') || '0');
-      
-      // Eğer mevcut toplam test sayısı öncekinden farklıysa güncelle
-      if (totalTests !== previousTotalTests) {
-        localStorage.setItem('previousTotalTests', totalTests.toString());
-      }
-      
-      const successChange = successfulTests - lastWeekSuccessful;
-      const failedChange = failedTests - lastWeekFailed;
-      const runningChange = runningTests - lastWeekRunning;
-      const totalChange = totalTests - previousTotalTests;
+      const currentRunningTests = checkRunningTests(); // Gerçek zamanlı çalışan testler
       
       return [
         { 
           label: 'Toplam Test', 
-          value: totalTests.toString(), 
-          change: totalChange >= 0 ? `+${totalChange}` : `${totalChange}`,
-          trend: totalChange >= 0 ? 'up' : 'down' 
+          value: totalTests.toString()
         },
         { 
           label: 'Başarılı', 
-          value: successfulTests.toString(), 
-          change: successChange >= 0 ? `+${successChange}` : `${successChange}`,
-          trend: successChange >= 0 ? 'up' : 'down' 
+          value: successfulTests.toString()
         },
         { 
           label: 'Başarısız', 
-          value: failedTests.toString(), 
-          change: failedChange >= 0 ? `+${failedChange}` : `${failedChange}`,
-          trend: failedChange <= 0 ? 'down' : 'up' 
+          value: failedTests.toString()
         },
         { 
           label: 'Çalışıyor', 
-          value: runningTests.toString(), 
-          change: runningChange >= 0 ? `+${runningChange}` : `${runningChange}`,
-          trend: runningChange >= 0 ? 'up' : 'down' 
+          value: currentRunningTests.toString()
         }
       ];
     } catch (error) {
@@ -208,12 +186,18 @@ const Dashboard = () => {
 
   // Otomatik yenileme için ayrı useEffect
   useEffect(() => {
-    // Otomatik yenileme (her 30 saniyede bir)
+    // Çalışan testleri daha sık kontrol et (her 5 saniyede bir)
+    const runningTestsInterval = setInterval(() => {
+      checkRunningTests();
+    }, 5 * 1000);
+    
+    // Genel dashboard verilerini yenile (her 30 saniyede bir)
     const refreshInterval = setInterval(() => {
       loadDashboardData();
     }, 30 * 1000);
     
     return () => {
+      clearInterval(runningTestsInterval);
       clearInterval(refreshInterval);
     };
   }, []);
@@ -294,11 +278,6 @@ const Dashboard = () => {
               <div className="summary-content">
                 <div className="summary-value">{item.value}</div>
                 <div className="summary-label">{item.label}</div>
-              </div>
-              <div className="summary-change">
-                {item.trend === 'up' && <TrendingUp size={16} className="trend-up" />}
-                {item.trend === 'down' && <TrendingDown size={16} className="trend-down" />}
-                <span className={`change-value ${item.trend}`}>{item.change}</span>
               </div>
             </div>
           ))}

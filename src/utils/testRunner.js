@@ -11,11 +11,17 @@ export const runTestWithHandling = async (testData, options = {}) => {
     onFinally
   } = options;
 
+  // Test ID oluştur
+  const testId = Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+  
   try {
     // Test başlatma kontrolü
     if (!testData.steps || testData.steps.length === 0) {
       throw new Error('Test çalıştırmak için en az bir adım eklemelisiniz!');
     }
+
+    // Aktif çalışan testlere ekle
+    addActiveRunningTest(testId, testData.testName || testData.name || 'İsimsiz Test');
 
     if (onStart) onStart();
 
@@ -58,6 +64,9 @@ export const runTestWithHandling = async (testData, options = {}) => {
       showErrorMessage(analysisResult);
     }
     
+    // Test başarıyla tamamlandığında da aktif testlerden kaldır
+    removeActiveRunningTest(testId);
+    
     return analysisResult;
     
   } catch (error) {
@@ -80,6 +89,9 @@ export const runTestWithHandling = async (testData, options = {}) => {
     
     return errorResult;
   } finally {
+    // Test tamamlandığında aktif testlerden kaldır
+    removeActiveRunningTest(testId);
+    
     if (onFinally) onFinally();
   }
 };
@@ -315,4 +327,70 @@ export const analyzeTestResults = (results) => {
     failed,
     results
   };
+};
+
+// Aktif çalışan testleri yönetme fonksiyonları
+export const addActiveRunningTest = (testId, testName) => {
+  try {
+    const activeTests = JSON.parse(localStorage.getItem('activeRunningTests') || '[]');
+    
+    // Aynı test zaten çalışıyorsa ekleme
+    if (activeTests.some(test => test.id === testId)) {
+      return;
+    }
+    
+    const newTest = {
+      id: testId,
+      name: testName,
+      startTime: new Date().toISOString()
+    };
+    
+    activeTests.push(newTest);
+    localStorage.setItem('activeRunningTests', JSON.stringify(activeTests));
+    
+    console.log('Aktif test eklendi:', newTest);
+  } catch (error) {
+    console.error('Aktif test ekleme hatası:', error);
+  }
+};
+
+export const removeActiveRunningTest = (testId) => {
+  try {
+    const activeTests = JSON.parse(localStorage.getItem('activeRunningTests') || '[]');
+    const filteredTests = activeTests.filter(test => test.id !== testId);
+    
+    localStorage.setItem('activeRunningTests', JSON.stringify(filteredTests));
+    
+    console.log('Aktif test kaldırıldı:', testId);
+  } catch (error) {
+    console.error('Aktif test kaldırma hatası:', error);
+  }
+};
+
+export const getActiveRunningTests = () => {
+  try {
+    return JSON.parse(localStorage.getItem('activeRunningTests') || '[]');
+  } catch (error) {
+    console.error('Aktif testleri alma hatası:', error);
+    return [];
+  }
+};
+
+export const clearExpiredRunningTests = () => {
+  try {
+    const activeTests = getActiveRunningTests();
+    const now = new Date();
+    
+    const validTests = activeTests.filter(test => {
+      const testStartTime = new Date(test.startTime);
+      const diffMinutes = (now - testStartTime) / (1000 * 60);
+      return diffMinutes < 5; // 5 dakikadan eski testleri temizle
+    });
+    
+    localStorage.setItem('activeRunningTests', JSON.stringify(validTests));
+    return validTests.length;
+  } catch (error) {
+    console.error('Süresi geçmiş testleri temizleme hatası:', error);
+    return 0;
+  }
 }; 
