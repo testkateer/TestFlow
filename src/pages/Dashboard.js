@@ -19,7 +19,6 @@ const Dashboard = () => {
   const [scheduledTests, setScheduledTests] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [lastUpdated, setLastUpdated] = useState(null);
 
   // Gerçek veri yükleme fonksiyonları
   const loadTestSummaryFromStorage = () => {
@@ -181,7 +180,6 @@ const Dashboard = () => {
       setTestSummary(summaryData);
       setRecentTests(recentData);
       setScheduledTests(scheduledData);
-      setLastUpdated(new Date());
     } catch (err) {
       setError('Veriler yüklenirken bir hata oluştu');
       console.error('Dashboard veri yükleme hatası:', err);
@@ -201,14 +199,20 @@ const Dashboard = () => {
     
     window.addEventListener('storage', handleStorageChange);
     
-    // Periyodik olarak güncelle (her 2 dakikada bir)
-    const interval = setInterval(() => {
-      loadDashboardData();
-    }, 2 * 60 * 1000);
-    
     return () => {
       window.removeEventListener('storage', handleStorageChange);
-      clearInterval(interval);
+    };
+  }, []);
+
+  // Otomatik yenileme için ayrı useEffect
+  useEffect(() => {
+    // Otomatik yenileme (her 30 saniyede bir)
+    const refreshInterval = setInterval(() => {
+      loadDashboardData();
+    }, 30 * 1000);
+    
+    return () => {
+      clearInterval(refreshInterval);
     };
   }, []);
 
@@ -221,9 +225,7 @@ const Dashboard = () => {
     }
   };
 
-  const handleRefresh = () => {
-    loadDashboardData();
-  };
+
 
   // Veri yoksa boş durum mesajı göster
   const hasData = testSummary.length > 0 || recentTests.length > 0 || scheduledTests.length > 0;
@@ -253,9 +255,6 @@ const Dashboard = () => {
         <div className="error-container">
           <AlertCircle size={24} className="error-icon" />
           <p>{error}</p>
-          <button className="btn btn-primary" onClick={handleRefresh}>
-            Tekrar Dene
-          </button>
         </div>
       </div>
     );
@@ -267,16 +266,7 @@ const Dashboard = () => {
         <div>
           <h1>Dashboard</h1>
           <p>Test otomasyonu platform genel durumu</p>
-          {lastUpdated && (
-            <small className="last-updated">
-              Son güncelleme: {lastUpdated.toLocaleTimeString('tr-TR')}
-            </small>
-          )}
         </div>
-        <button className="btn btn-secondary refresh-btn" onClick={handleRefresh}>
-          <RefreshCw size={16} />
-          Yenile
-        </button>
       </div>
 
       {/* Veri yoksa bilgilendirme mesajı */}
