@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { 
   Save, 
@@ -39,7 +39,8 @@ const TestEditor = () => {
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [originalData, setOriginalData] = useState({ testName: 'Yeni Test Senaryosu', steps: [] });
   const { showError } = useNotification();
-  const { showConfirm } = useModal();
+  const { showTripleConfirm } = useModal();
+  const saveTestFlowRef = useRef();
 
   const stepTypes = [
     { id: 'navigate', name: 'Git', icon: Navigation, description: 'Belirtilen URL\'ye git' },
@@ -149,14 +150,25 @@ const TestEditor = () => {
     // Global window objesine TestEditor'ın unsaved changes kontrolünü ekle
     window.checkTestEditorUnsavedChanges = async () => {
       if (hasUnsavedChanges) {
-        const shouldLeave = await showConfirm({
+        const result = await showTripleConfirm({
           title: 'Kaydedilmemiş Değişiklikler',
           message: 'Kaydedilmemiş değişiklikleriniz var. Bu sayfadan çıkmak istediğinizden emin misiniz?',
-          confirmText: 'Çık',
-          cancelText: 'Kal',
-          variant: 'warning'
+          saveText: 'Kaydet ve Çık',
+          exitText: 'Çık',
+          cancelText: 'İptal'
         });
-        return shouldLeave;
+        
+        if (result === 'save') {
+          // Kaydet ve çık
+          await saveTestFlowRef.current();
+          return true;
+        } else if (result === 'exit') {
+          // Kaydetmeden çık
+          return true;
+        } else {
+          // İptal
+          return false;
+        }
       }
       return true;
     };
@@ -165,7 +177,7 @@ const TestEditor = () => {
     return () => {
       delete window.checkTestEditorUnsavedChanges;
     };
-  }, [hasUnsavedChanges, showConfirm]);
+  }, [hasUnsavedChanges, showTripleConfirm]);
 
   const addStep = (stepType) => {
     const newStep = {
@@ -295,7 +307,7 @@ const TestEditor = () => {
     });
   };
 
-  const saveTestFlow = async () => {
+  const saveTestFlow = useCallback(async () => {
     // Validation
     const validationResult = validateTestFlow({ testName, steps });
     if (!validationResult.isValid) {
@@ -354,7 +366,10 @@ const TestEditor = () => {
       console.error('Kaydetme hatası:', error);
       notify.saveError(testName);
     }
-  };
+  }, [testName, steps, setOriginalData]);
+
+  // saveTestFlow fonksiyonunu ref'e ata
+  saveTestFlowRef.current = saveTestFlow;
 
   return (
     <div className="test-editor">

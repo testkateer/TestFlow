@@ -103,6 +103,62 @@ export const ModalProvider = ({ children }) => {
     });
   }, [addModal]);
 
+  const showTripleConfirm = useCallback((options = {}) => {
+    return new Promise((resolve) => {
+      let modalId;
+
+      const customFooter = (
+        <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+          <button 
+            className="modal__button modal__button--secondary"
+            onClick={() => {
+              resolve('cancel');
+              removeModal(modalId);
+            }}
+          >
+            {options.cancelText || 'İptal'}
+          </button>
+          <button 
+            className="modal__button modal__button--danger"
+            onClick={() => {
+              resolve('exit');
+              removeModal(modalId);
+            }}
+          >
+            {options.exitText || 'Çık'}
+          </button>
+          <button 
+            className="modal__button modal__button--primary"
+            onClick={() => {
+              resolve('save');
+              removeModal(modalId);
+            }}
+            autoFocus
+          >
+            {options.saveText || 'Kaydet ve Çık'}
+          </button>
+        </div>
+      );
+
+      const modal = {
+        type: 'custom',
+        title: options.title || 'Onayla',
+        message: options.message || 'Bu işlemi yapmak istediğinizden emin misiniz?',
+        customFooter,
+        onClose: () => {
+          resolve('cancel');
+        },
+        showCloseButton: options.showCloseButton !== false,
+        closeOnEsc: options.closeOnEsc !== false,
+        closeOnOverlay: options.closeOnOverlay !== false,
+        width: options.width || 'auto',
+        ...options
+      };
+
+      modalId = addModal(modal);
+    });
+  }, [addModal, removeModal]);
+
   const value = {
     modals,
     addModal,
@@ -110,7 +166,8 @@ export const ModalProvider = ({ children }) => {
     removeAllModals,
     showConfirm,
     showAlert,
-    showCustomModal
+    showCustomModal,
+    showTripleConfirm
   };
 
   return (
