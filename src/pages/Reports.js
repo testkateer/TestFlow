@@ -63,14 +63,17 @@ const Reports = () => {
   };
 
   const filteredReports = reportsList.filter(report => {
-    const matchesSearch = report.testName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         report.description.toLowerCase().includes(searchTerm.toLowerCase());
+    const testName = report.testName || report.name || '';
+    const description = report.description || '';
+    
+    const matchesSearch = testName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         description.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = filterStatus === 'all' || report.status === filterStatus;
     
     let matchesDate = true;
     if (filterDate !== 'all') {
       const today = new Date();
-      const reportDate = new Date(report.date);
+      const reportDate = new Date(report.date || report.timestamp);
       
       switch (filterDate) {
         case 'today':
@@ -199,12 +202,21 @@ const Reports = () => {
               </tr>
             </thead>
             <tbody>
-              {filteredReports.map((report) => (
+              {filteredReports.map((report) => {
+                const testName = report.testName || report.name || 'İsimsiz Test';
+                const description = report.description || '';
+                const totalSteps = report.totalSteps || 0;
+                const successfulSteps = report.successfulSteps || report.passedSteps || 0;
+                const timestamp = report.timestamp || report.date || new Date().toISOString();
+                const reportDate = new Date(timestamp);
+                const trigger = report.trigger || 'Manuel';
+                
+                return (
                 <tr key={report.id}>
                   <td>
                     <div className="test-info">
-                      <h4>{report.testName}</h4>
-                      <p>{report.description}</p>
+                      <h4>{testName}</h4>
+                      <p>{description}</p>
                     </div>
                   </td>
                   <td>
@@ -215,34 +227,34 @@ const Reports = () => {
                   </td>
                   <td>
                     <div className="success-rate">
-                      <span className="percentage">{getSuccessRate(report.passedSteps, report.totalSteps)}%</span>
+                      <span className="percentage">{totalSteps > 0 ? getSuccessRate(successfulSteps, totalSteps) : 0}%</span>
                       <div className="progress-bar">
                         <div 
                           className="progress-fill" 
-                          style={{ width: `${getSuccessRate(report.passedSteps, report.totalSteps)}%` }}
+                          style={{ width: `${totalSteps > 0 ? getSuccessRate(successfulSteps, totalSteps) : 0}%` }}
                         ></div>
                       </div>
-                      <span className="steps-count">{report.passedSteps}/{report.totalSteps}</span>
+                      <span className="steps-count">{successfulSteps}/{totalSteps}</span>
                     </div>
                   </td>
                   <td>
                     <div className="duration">
                       <Clock size={14} />
-                      {report.duration}
+                      {report.duration || '-'}
                     </div>
                   </td>
                   <td>
                     <div className="datetime">
                       <div className="date">
                         <Calendar size={14} />
-                        {report.date}
+                        {reportDate.toLocaleDateString('tr-TR')}
                       </div>
-                      <div className="time">{report.time}</div>
+                      <div className="time">{reportDate.toLocaleTimeString('tr-TR')}</div>
                     </div>
                   </td>
                   <td>
-                    <span className={`trigger-badge ${report.trigger.toLowerCase()}`}>
-                      {report.trigger}
+                    <span className={`trigger-badge ${trigger.toLowerCase()}`}>
+                      {trigger}
                     </span>
                   </td>
                   <td>
@@ -264,7 +276,8 @@ const Reports = () => {
                     </div>
                   </td>
                 </tr>
-              ))}
+                );
+              })}
             </tbody>
           </table>
         </div>

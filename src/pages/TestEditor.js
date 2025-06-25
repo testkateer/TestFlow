@@ -17,6 +17,7 @@ import {
   Edit,
   AlertCircle
 } from 'lucide-react';
+import { exportTestFlow, importTestFlow } from '../utils/testUtils';
 import '../styles/TestEditor.css';
 
 const TestEditor = () => {
@@ -43,10 +44,11 @@ const TestEditor = () => {
     setHasUnsavedChanges(steps.length > 0);
   }, [steps]);
 
-  // Sayfa yüklendiğinde rerun parametresi kontrolü
+  // Sayfa yüklendiğinde rerun parametresi ve düzenleme modu kontrolü
   useEffect(() => {
     const urlParams = new URLSearchParams(location.search);
     const isRerun = urlParams.get('rerun') === 'true';
+    const editTestId = urlParams.get('edit');
     
     if (isRerun) {
       try {
@@ -80,6 +82,39 @@ const TestEditor = () => {
       } catch (error) {
         console.error('Test tekrar yükleme hatası:', error);
         alert('Test tekrar yüklenirken bir hata oluştu.');
+      }
+    } else if (editTestId) {
+      try {
+        // Düzenleme modunda test verilerini yükle
+        const editingTestData = localStorage.getItem('editingTest');
+        if (editingTestData) {
+          const testData = JSON.parse(editingTestData);
+          
+          // Icon'ları doğru şekilde map et
+          const stepsWithIcons = (testData.steps || []).map(step => {
+            const stepType = stepTypes.find(type => type.id === step.type);
+            return {
+              ...step,
+              icon: stepType ? stepType.icon : AlertCircle
+            };
+          });
+          
+          setTestName(testData.name || 'Yeni Test Senaryosu');
+          setSteps(stepsWithIcons);
+          setHasUnsavedChanges(false); // Düzenleme modunda başlangıçta değişiklik yok
+          
+          // Geçici veriyi temizle
+          localStorage.removeItem('editingTest');
+          
+          // URL'den edit parametresini temizle
+          const newUrl = window.location.pathname;
+          window.history.replaceState({}, '', newUrl);
+          
+          console.log('Test düzenleme için yüklendi:', testData.name);
+        }
+      } catch (error) {
+        console.error('Test düzenleme yükleme hatası:', error);
+        alert('Test düzenlenirken bir hata oluştu.');
       }
     }
      }, [location.search, stepTypes]);
@@ -327,85 +362,20 @@ const TestEditor = () => {
 
 
 
-  const exportTestFlow = () => {
-    try {
-      const testData = {
-        testName,
-        steps,
-        exportDate: new Date().toISOString(),
-        version: '1.0'
-      };
-
-      const jsonString = JSON.stringify(testData, null, 2);
-      const blob = new Blob([jsonString], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `${testName.replace(/\s+/g, '_')}.json`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      
-      URL.revokeObjectURL(url);
-      
-      alert(`✅ Test akışı başarıyla dışa aktarıldı!\nDosya adı: ${testName.replace(/\s+/g, '_')}.json`);
-    } catch (error) {
-      console.error('Dışa aktarma hatası:', error);
-      alert(`❌ Dışa aktarma hatası: ${error.message}`);
-    }
+  const handleExportTestFlow = () => {
+    const testData = {
+      testName,
+      steps
+    };
+    exportTestFlow(testData);
   };
 
-  const importTestFlow = () => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = '.json';
-    input.onchange = (event) => {
-      const file = event.target.files[0];
-      if (!file) return;
-
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        try {
-          const testData = JSON.parse(e.target.result);
-          
-          // Veri doğrulama
-          if (!testData.testName || !Array.isArray(testData.steps)) {
-            throw new Error('Geçersiz test dosyası formatı');
-          }
-
-          // Icon mapping için stepTypes'ı kullan
-          const getIconForType = (stepType) => {
-            const stepTypeObj = stepTypes.find(st => st.id === stepType);
-            return stepTypeObj ? stepTypeObj.icon : null;
-          };
-
-          // Adım verilerini doğrula ve icon'ları düzelt
-          const validSteps = testData.steps.filter(step => 
-            step.id && step.type && step.name && step.config
-          ).map(step => ({
-            ...step,
-            icon: getIconForType(step.type), // Icon'u type'a göre yeniden ata
-            id: Date.now() + Math.random() // ID'yi yeniden oluştur
-          })).filter(step => step.icon !== null); // Geçersiz type'ları filtrele
-
-          if (validSteps.length !== testData.steps.length) {
-            console.warn('Bazı adımlar geçersiz olduğu için atlandı');
-          }
-
-          setTestName(testData.testName);
-          setSteps(validSteps);
-          setSelectedStep(null);
-          
-          alert(`✅ Test akışı başarıyla içe aktarıldı!\nTest adı: ${testData.testName}\nAdım sayısı: ${validSteps.length}`);
-        } catch (error) {
-          console.error('İçe aktarma hatası:', error);
-          alert(`❌ İçe aktarma hatası: ${error.message}\n\nDosyanın geçerli bir test akışı JSON dosyası olduğundan emin olun.`);
-        }
-      };
-      reader.readAsText(file);
-    };
-    input.click();
+  const handleImportTestFlow = () => {
+    importTestFlow(stepTypes, (importedData) => {
+      setTestName(importedData.testName);
+      setSteps(importedData.steps);
+      setSelectedStep(null);
+    });
   };
 
   const saveTestFlow = () => {
@@ -491,11 +461,11 @@ const TestEditor = () => {
           </div>
         </div>
         <div className="header-actions">
-          <button className="btn btn-secondary" onClick={importTestFlow}>
+          <button className="btn btn-secondary" onClick={handleImportTestFlow}>
             <Upload size={16} />
             İçe Aktar
           </button>
-          <button className="btn btn-secondary" onClick={exportTestFlow}>
+          <button className="btn btn-secondary" onClick={handleExportTestFlow}>
             <Download size={16} />
             Dışa Aktar
           </button>
