@@ -1,11 +1,9 @@
 import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
-  LayoutDashboard, 
-  List, 
-  Edit3, 
-  Clock, 
-  BarChart3, 
+  PieChart, 
+  Workflow,
+  Clock,
   FileText,
   Settings,
   Plus,
@@ -34,8 +32,8 @@ const Layout = ({ children }) => {
 
   const navItems = [
     { path: '/editor', icon: Plus, label: 'Yeni Akış' },
-    { path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-    { path: '/tests', icon: List, label: 'Akışlar' },
+    { path: '/dashboard', icon: PieChart, label: 'Dashboard' },
+    { path: '/tests', icon: Workflow, label: 'Akışlar' },
     { path: '/scheduling', icon: Clock, label: 'Zamanlama' },
     { path: '/reports', icon: FileText, label: 'Raporlar' },
     { path: '/settings', icon: Settings, label: 'Ayarlar' },

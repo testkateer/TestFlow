@@ -11,7 +11,6 @@ import {
   Image,
   Video,
   Monitor,
-  RefreshCw,
   ExternalLink,
   Play,
   Edit

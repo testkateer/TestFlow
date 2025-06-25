@@ -8,9 +8,6 @@ import {
   Clock, 
   Download, 
   MoreHorizontal,
-  Chrome,
-  Globe,
-  Smartphone,
   Trash2
 } from 'lucide-react';
 import { exportTestFlow } from '../utils/testUtils';
@@ -200,7 +197,7 @@ const TestList = () => {
     <div className="test-list-page">
       <div className="page-header">
         <div className="header-content">
-          <h1>🔍 Akışlar</h1>
+          <h1>Akışlar</h1>
           <p>Tüm test senaryolarınızı görüntüleyin ve yönetin</p>
         </div>
       </div>
@@ -245,10 +242,7 @@ const TestList = () => {
             </select>
           </div>
           
-          <button className="btn btn-secondary">
-            <Filter size={16} />
-            Gelişmiş Filtre
-          </button>
+
         </div>
       </div>
 

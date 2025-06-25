@@ -2,8 +2,7 @@ import React, { useState } from 'react';
 import { 
   Clock, 
   Calendar, 
-  Play, 
-  Pause, 
+  Play,
   Edit, 
   Trash2, 
   Bell,
@@ -81,7 +80,7 @@ const Scheduling = () => {
     <div className="scheduling-page">
       <div className="page-header">
         <div className="header-content">
-          <h1>⏰ Zamanlama</h1>
+          <h1>Zamanlama</h1>
           <p>Testlerin otomatik çalıştırma zamanlarını yönetin</p>
         </div>
       </div>

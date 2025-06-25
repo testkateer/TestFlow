@@ -101,7 +101,7 @@ const Reports = () => {
     <div className="reports-page">
       <div className="page-header">
         <div className="header-content">
-          <h1>📊 Raporlar</h1>
+          <h1>Raporlar</h1>
           <p>Tüm test çalıştırma sonuçlarını görüntüleyin ve analiz edin</p>
         </div>
         <div className="header-stats">
@@ -168,10 +168,7 @@ const Reports = () => {
             </select>
           </div>
           
-          <button className="btn btn-secondary">
-            <Filter size={16} />
-            Gelişmiş Filtre
-          </button>
+
         </div>
       </div>
 

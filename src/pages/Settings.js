@@ -3,8 +3,7 @@ import {
   User, 
   Globe, 
   Monitor, 
-  Camera, 
-  Video, 
+  Camera,
   Bell, 
   Shield, 
   Database,
@@ -98,7 +97,7 @@ const Settings = () => {
   return (
     <div className="settings-page">
       <div className="page-header">
-        <h1>⚙️ Ayarlar</h1>
+        <h1>Ayarlar</h1>
         <p>Kişisel tercihlerinizi ve sistem ayarlarınızı yönetin</p>
       </div>
 
