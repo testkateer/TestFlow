@@ -6,7 +6,9 @@ import {
   CheckCircle,
   XCircle,
   AlertCircle,
-  RefreshCw
+  RefreshCw,
+  BarChart3,
+  Percent
 } from 'lucide-react';
 import { getFromStorage, setToStorage } from '../utils/storageUtils';
 import { clearExpiredRunningTests } from '../utils/testRunner';
@@ -62,23 +64,33 @@ const Dashboard = () => {
       return [
         { 
           label: 'Toplam Test', 
-          value: totalTests.toString()
+          value: totalTests.toString(),
+          icon: <BarChart3 size={20} />,
+          className: ''
         },
         { 
           label: 'Başarılı', 
-          value: successfulTests.toString()
+          value: successfulTests.toString(),
+          icon: <CheckCircle size={20} />,
+          className: 'success'
         },
         { 
           label: 'Başarısız', 
-          value: failedTests.toString()
+          value: failedTests.toString(),
+          icon: <XCircle size={20} />,
+          className: 'error'
         },
         { 
           label: 'Başarı Oranı', 
-          value: `%${successRate}`
+          value: `${successRate}`,
+          icon: <Percent size={20} />,
+          className: 'rate'
         },
         { 
           label: 'Çalışıyor', 
-          value: currentRunningTests.toString()
+          value: currentRunningTests.toString(),
+          icon: <PlayCircle size={20} />,
+          className: 'running'
         }
       ];
     } catch (error) {
@@ -218,8 +230,6 @@ const Dashboard = () => {
     }
   };
 
-
-
   // Veri yoksa boş durum mesajı göster
   const hasData = testSummary.length > 0 || recentTests.length > 0 || scheduledTests.length > 0;
 
@@ -281,10 +291,11 @@ const Dashboard = () => {
       {testSummary.length > 0 && (
         <div className="summary-grid">
           {testSummary.map((item, index) => (
-            <div key={index} className="summary-card card">
+            <div key={index} className={`summary-card ${item.className}`}>
+              {item.icon}
               <div className="summary-content">
-                <div className="summary-value">{item.value}</div>
-                <div className="summary-label">{item.label}</div>
+                <span className="summary-value">{item.value}</span>
+                <span className="summary-label">{item.label}</span>
               </div>
             </div>
           ))}
