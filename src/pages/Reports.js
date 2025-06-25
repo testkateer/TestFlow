@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { downloadTestReport } from '../utils/reportUtils';
 import { getFromStorage } from '../utils/storageUtils';
+import { isToday, isThisWeek } from '../utils/dateUtils';
 import '../styles/Reports.css';
 
 const Reports = () => {
@@ -69,15 +70,14 @@ const Reports = () => {
     let matchesDate = true;
     if (filterDate !== 'all') {
       const today = new Date();
-      const reportDate = new Date(report.date || report.timestamp);
+      const reportDate = new Date(report.timestamp || report.date);
       
       switch (filterDate) {
         case 'today':
-          matchesDate = reportDate.toDateString() === today.toDateString();
+          matchesDate = isToday(reportDate);
           break;
         case 'week':
-          const weekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
-          matchesDate = reportDate >= weekAgo;
+          matchesDate = isThisWeek(reportDate);
           break;
         case 'month':
           const monthAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
