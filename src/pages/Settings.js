@@ -19,12 +19,73 @@ import {
   Save,
   RotateCcw
 } from 'lucide-react';
+import { toast, notify } from '../utils/notificationUtils';
+import { confirmActions } from '../utils/modalUtils';
 import '../styles/Settings.css';
 
 const Settings = () => {
   const [activeTab, setActiveTab] = useState('profile');
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [showApiKey, setShowApiKey] = useState(false);
+
+  // Settings kaydetme fonksiyonu
+  const handleSaveSettings = () => {
+    try {
+      // Burada normalde API'ye post edilir, şimdilik localStorage'a kaydedelim
+      const settings = {
+        darkMode: isDarkMode,
+        // Diğer ayarlar...
+      };
+      localStorage.setItem('userSettings', JSON.stringify(settings));
+      notify.saveSuccess('Ayarlar');
+    } catch (error) {
+      notify.saveError('Ayarlar');
+    }
+  };
+
+  // Ayarları sıfırlama fonksiyonu
+  const handleResetSettings = async () => {
+    const confirmed = await confirmActions.reset('tüm ayarları');
+    if (confirmed) {
+      setIsDarkMode(false);
+      setShowApiKey(false);
+      localStorage.removeItem('userSettings');
+      notify.saveSuccess('Ayarlar sıfırlandı');
+    }
+  };
+
+  // Veri dışa aktarma
+  const handleExportData = () => {
+    try {
+      const data = {
+        tests: JSON.parse(localStorage.getItem('savedTestFlows') || '[]'),
+        reports: JSON.parse(localStorage.getItem('testReports') || '[]'),
+        settings: JSON.parse(localStorage.getItem('userSettings') || '{}')
+      };
+      
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `testflow-backup-${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      
+      notify.saveSuccess('Veriler dışa aktarıldı');
+    } catch (error) {
+      notify.saveError('Veri dışa aktarma');
+    }
+  };
+
+  // Profil fotoğrafı yükleme
+  const handleAvatarUpload = () => {
+    // Simülasyon
+    setTimeout(() => {
+      toast.success('Profil fotoğrafı yüklendi!');
+    }, 1000);
+  };
 
   const tabs = [
     { id: 'profile', name: 'Profil', icon: User },
@@ -77,11 +138,11 @@ const Settings = () => {
                     <User size={48} />
                   </div>
                   <div className="avatar-actions">
-                    <button className="btn btn-secondary btn-sm">
+                    <button className="btn btn-secondary btn-sm" onClick={handleAvatarUpload}>
                       <Upload size={14} />
                       Fotoğraf Yükle
                     </button>
-                    <button className="btn btn-secondary btn-sm">
+                    <button className="btn btn-secondary btn-sm" onClick={() => toast.info('Avatar sıfırlandı')}>
                       <RotateCcw size={14} />
                       Sıfırla
                     </button>
@@ -92,27 +153,27 @@ const Settings = () => {
                   <div className="form-row">
                     <div className="form-group">
                       <label>Ad:</label>
-                      <input type="text" defaultValue="Ahmet" />
+                      <input type="text"/>
                     </div>
                     <div className="form-group">
                       <label>Soyad:</label>
-                      <input type="text" defaultValue="Yılmaz" />
+                      <input type="text"/>
                     </div>
                   </div>
 
                   <div className="form-group">
                     <label>E-posta:</label>
-                    <input type="email" defaultValue="ahmet@example.com" />
+                    <input type="email" />
                   </div>
 
                   <div className="form-group">
                     <label>Şirket:</label>
-                    <input type="text" defaultValue="Example Tech" />
+                    <input type="text"/>
                   </div>
 
                   <div className="form-group">
                     <label>Pozisyon:</label>
-                    <input type="text" defaultValue="QA Engineer" />
+                    <input type="text"/>
                   </div>
 
                   <div className="form-group">
@@ -120,7 +181,6 @@ const Settings = () => {
                     <textarea 
                       rows="3" 
                       placeholder="Kendiniz hakkında kısa bir açıklama..."
-                      defaultValue="Test otomasyonu uzmanı, 5+ yıl deneyim"
                     />
                   </div>
                 </div>
@@ -475,7 +535,7 @@ const Settings = () => {
                       <span className="backup-name">Test Verileri</span>
                       <span className="backup-desc">Tüm test senaryoları, adımlar ve ayarlar</span>
                     </div>
-                    <button className="btn btn-primary">
+                    <button className="btn btn-primary" onClick={handleExportData}>
                       <Download size={14} />
                       Yedekle
                     </button>
@@ -542,11 +602,11 @@ const Settings = () => {
 
           {/* Save Actions */}
           <div className="save-actions">
-            <button className="btn btn-secondary">
+            <button className="btn btn-secondary" onClick={handleResetSettings}>
               <RotateCcw size={16} />
               Sıfırla
             </button>
-            <button className="btn btn-primary">
+            <button className="btn btn-primary" onClick={handleSaveSettings}>
               <Save size={16} />
               Değişiklikleri Kaydet
             </button>

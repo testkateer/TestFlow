@@ -1,3 +1,5 @@
+import { globalNotify, globalToast } from './globalNotification';
+
 // Test çalıştırma işlemleri için ortak fonksiyonlar
 
 export const runTestWithHandling = async (testData, options = {}) => {
@@ -48,8 +50,6 @@ export const runTestWithHandling = async (testData, options = {}) => {
     // Test sonucunu analiz et
     const analysisResult = analyzeTestResult(result, testData);
     
-    // Test raporu kaydetme işlemi ana sayfalarda yapılacak (duplicate önlemek için)
-    
     if (analysisResult.isSuccess) {
       if (onSuccess) onSuccess(analysisResult.result);
       showSuccessMessage(analysisResult);
@@ -73,9 +73,9 @@ export const runTestWithHandling = async (testData, options = {}) => {
     
     // Hata mesajını göster
     if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
-      alert(`❌ Server bağlantı hatası!\n\nLütfen şunları kontrol edin:\n1. 'npm run server' komutu ile server'ı başlattınız mı?\n2. Server 3001 portunda çalışıyor mu?\n\nHata: ${error.message}`);
+      globalNotify.serverError();
     } else {
-      alert(`Test çalıştırma hatası: ${error.message}`);
+      globalNotify.testRunError(error.message);
     }
     
     return errorResult;
@@ -138,11 +138,12 @@ export const showSuccessMessage = (analysisResult) => {
   const { successfulSteps, totalSteps, completedSteps, isFullyCompleted } = analysisResult;
   
   if (isFullyCompleted && analysisResult.isFullySuccessful) {
-    alert(`✅ Test başarıyla tamamlandı!\n\n📊 Sonuç: ${successfulSteps}/${totalSteps} adım başarılı`);
+    globalToast.success(`Test başarıyla tamamlandı! ${successfulSteps}/${totalSteps} adım başarılı`);
   } else if (!isFullyCompleted) {
-    alert(`⚠️ Test tamamlanamadı!\n\n📊 Sonuç: ${completedSteps}/${totalSteps} adım tamamlandı\n✅ Başarılı: ${successfulSteps}\n❌ Başarısız: ${completedSteps - successfulSteps}`);
+    globalToast.warning(`Test tamamlanamadı! ${completedSteps}/${totalSteps} adım tamamlandı. Başarılı: ${successfulSteps}`);
   } else {
-    alert(`❌ Test başarısız!\n\n📊 Sonuç: ${successfulSteps}/${totalSteps} adım başarılı\n${analysisResult.result.error ? `\nHata: ${analysisResult.result.error}` : ''}`);
+    const errorMessage = analysisResult.result.error ? ` Hata: ${analysisResult.result.error}` : '';
+    globalToast.error(`Test başarısız! ${successfulSteps}/${totalSteps} adım başarılı${errorMessage}`);
   }
 };
 
@@ -152,6 +153,166 @@ export const showErrorMessage = (analysisResult) => {
     showSuccessMessage(analysisResult); // Tamamlanmış ama başarısız
   } else {
     const { successfulSteps, totalSteps, completedSteps } = analysisResult;
-    alert(`⚠️ Test tamamlanamadı!\n\n📊 Sonuç: ${completedSteps}/${totalSteps} adım tamamlandı\n✅ Başarılı: ${successfulSteps}\n❌ Başarısız: ${completedSteps - successfulSteps}`);
+    globalToast.warning(`Test tamamlanamadı! ${completedSteps}/${totalSteps} adım tamamlandı. Başarılı: ${successfulSteps}`);
   }
+};
+
+export const runSingleStep = async (step, browser = 'chromium') => {
+  try {
+    const response = await fetch('http://localhost:3001/api/run-single-step', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ step, browser }),
+    });
+
+    if (!response.ok) {
+      if (response.status === 500) {
+        const errorData = await response.json();
+        if (errorData.error?.includes('ECONNREFUSED') || errorData.error?.includes('connect')) {
+          globalNotify.serverError();
+          return { success: false, error: 'Server bağlantı hatası' };
+        }
+      }
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const result = await response.json();
+    return result;
+  } catch (error) {
+    console.error('Test çalıştırma hatası:', error);
+    if (error.message.includes('Failed to fetch') || error.message.includes('ECONNREFUSED')) {
+      globalNotify.serverError();
+    } else {
+      globalNotify.testRunError(error.message);
+    }
+    return { success: false, error: error.message };
+  }
+};
+
+export const runTestFlow = async (steps, browser = 'chromium', onStepComplete, onTestComplete) => {
+  let successfulSteps = 0;
+  let completedSteps = 0;
+  let currentStepIndex = 0;
+  const totalSteps = steps.length;
+
+  const results = [];
+
+  try {
+    for (const step of steps) {
+      currentStepIndex++;
+      
+      if (onStepComplete) {
+        onStepComplete(currentStepIndex, totalSteps, step, 'running');
+      }
+
+      const result = await runSingleStep(step, browser);
+      results.push({
+        step,
+        result,
+        timestamp: new Date().toISOString()
+      });
+
+      completedSteps++;
+
+      if (result.success) {
+        successfulSteps++;
+        if (onStepComplete) {
+          onStepComplete(currentStepIndex, totalSteps, step, 'success', result);
+        }
+      } else {
+        if (onStepComplete) {
+          onStepComplete(currentStepIndex, totalSteps, step, 'error', result);
+        }
+        // Hata durumunda test akışını durdur
+        break;
+      }
+    }
+
+    // Test sonucunu değerlendir
+    const analysisResult = analyzeTestResults(results);
+    
+    if (onTestComplete) {
+      onTestComplete({
+        success: analysisResult.success,
+        results,
+        analysis: analysisResult,
+        stats: {
+          total: totalSteps,
+          completed: completedSteps,
+          successful: successfulSteps,
+          failed: completedSteps - successfulSteps
+        }
+      });
+    }
+
+    // Sonuç mesajını göster
+    if (successfulSteps === totalSteps) {
+      globalToast.success(`Test başarıyla tamamlandı! ${successfulSteps}/${totalSteps} adım başarılı`);
+    } else if (completedSteps < totalSteps) {
+      globalToast.warning(`Test tamamlanamadı! ${completedSteps}/${totalSteps} adım tamamlandı. Başarılı: ${successfulSteps}`);
+    } else {
+      const errorMessage = analysisResult.result?.error ? ` Hata: ${analysisResult.result.error}` : '';
+      globalToast.error(`Test başarısız! ${successfulSteps}/${totalSteps} adım başarılı${errorMessage}`);
+    }
+
+    return {
+      success: analysisResult.success,
+      results,
+      analysis: analysisResult,
+      stats: {
+        total: totalSteps,
+        completed: completedSteps,
+        successful: successfulSteps,
+        failed: completedSteps - successfulSteps
+      }
+    };
+
+  } catch (error) {
+    console.error('Test akışı çalıştırma hatası:', error);
+    
+    if (onTestComplete) {
+      onTestComplete({
+        success: false,
+        error: error.message,
+        results,
+        stats: {
+          total: totalSteps,
+          completed: completedSteps,
+          successful: successfulSteps,
+          failed: completedSteps - successfulSteps
+        }
+      });
+    }
+
+    globalToast.warning(`Test tamamlanamadı! ${completedSteps}/${totalSteps} adım tamamlandı. Başarılı: ${successfulSteps}`);
+
+    return {
+      success: false,
+      error: error.message,
+      results,
+      stats: {
+        total: totalSteps,
+        completed: completedSteps,
+        successful: successfulSteps,
+        failed: completedSteps - successfulSteps
+      }
+    };
+  }
+};
+
+// Test sonuçlarını analiz et
+export const analyzeTestResults = (results) => {
+  const total = results.length;
+  const successful = results.filter(r => r.result.success).length;
+  const failed = total - successful;
+  
+  return {
+    success: failed === 0,
+    total,
+    successful,
+    failed,
+    results
+  };
 }; 

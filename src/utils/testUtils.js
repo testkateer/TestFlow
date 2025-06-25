@@ -1,4 +1,5 @@
 // Test akışları için ortak import/export fonksiyonları
+import { globalNotify } from './globalNotification';
 
 export const exportTestFlow = (testData, fileName) => {
   try {
@@ -22,11 +23,11 @@ export const exportTestFlow = (testData, fileName) => {
     
     URL.revokeObjectURL(url);
     
-    alert(`✅ Test akışı başarıyla dışa aktarıldı!\nDosya adı: ${link.download}`);
+    globalNotify.exportSuccess(link.download);
     return true;
   } catch (error) {
     console.error('Dışa aktarma hatası:', error);
-    alert(`❌ Dışa aktarma hatası: ${error.message}`);
+    globalNotify.exportError(error.message);
     return false;
   }
 };
@@ -81,11 +82,11 @@ export const importTestFlow = (stepTypes, onImportSuccess) => {
             onImportSuccess(importedData);
           }
           
-          alert(`✅ Test akışı başarıyla içe aktarıldı!\nTest adı: ${testData.testName}\nAdım sayısı: ${validSteps.length}`);
+          globalNotify.importSuccess(testData.testName, validSteps.length);
           resolve(importedData);
         } catch (error) {
           console.error('İçe aktarma hatası:', error);
-          alert(`❌ İçe aktarma hatası: ${error.message}\n\nDosyanın geçerli bir test akışı JSON dosyası olduğundan emin olun.`);
+          globalNotify.importError(error.message);
           reject(error);
         }
       };

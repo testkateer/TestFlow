@@ -19,6 +19,8 @@ import { getFromStorage, setToStorage, getTempData, setTempData } from '../utils
 import { getStatusIcon, getStatusText, getBrowserIcon } from '../utils/statusUtils';
 import { formatDateTime, formatDate, formatTime } from '../utils/dateUtils';
 import { saveTestReportToStorage, calculateTestDuration } from '../utils/reportUtils';
+import { toast, notify } from '../utils/notificationUtils';
+import { confirmActions } from '../utils/modalUtils';
 import '../styles/TestList.css';
 
 const TestList = () => {
@@ -67,19 +69,23 @@ const TestList = () => {
   // getBrowserIcon artık utility'den geldi, yerel fonksiyonu kaldır
 
   // Test silme işlevi - storage utility kullan
-  const deleteTest = (testId) => {
-    if (window.confirm('Bu akışı silmek istediğinizden emin misiniz?')) {
+  const deleteTest = async (testId) => {
+    const testName = tests.find(test => test.id === testId)?.name || 'akışı';
+    const confirmed = await confirmActions.delete(testName);
+    
+    if (confirmed) {
       const updatedTests = tests.filter(test => test.id !== testId);
       setTests(updatedTests);
       setToStorage('savedTestFlows', updatedTests);
       setOpenDropdownId(null);
+      notify.deleteSuccess(testName);
     }
   };
 
   // Test çalıştırma işlevi - ortak utility kullan
   const runTest = async (test) => {
     if (runningTests.has(test.id)) {
-      alert('Bu test zaten çalışıyor.');
+      toast.warning('Bu test zaten çalışıyor!');
       return;
     }
 
@@ -93,6 +99,8 @@ const TestList = () => {
         const updatedTest = { ...test, status: 'running' };
         const updatedTests = tests.map(t => t.id === test.id ? updatedTest : t);
         setTests(updatedTests);
+        
+        toast.info(`${test.name} testi başlatılıyor...`);
       },
       onSuccess: (result) => {
         // Test sonucunu Reports sayfası için kaydet
@@ -109,6 +117,8 @@ const TestList = () => {
         const finalTests = tests.map(t => t.id === test.id ? finalTest : t);
         setTests(finalTests);
         setToStorage('savedTestFlows', finalTests);
+        
+        toast.success(`${test.name} testi başarıyla tamamlandı!`);
       },
       onError: (result) => {
         // Hata durumunda test raporunu kaydet
@@ -125,6 +135,8 @@ const TestList = () => {
         const finalTests = tests.map(t => t.id === test.id ? errorResult : t);
         setTests(finalTests);
         setToStorage('savedTestFlows', finalTests);
+        
+        toast.error(`${test.name} testi başarısız oldu!`);
       },
       onFinally: () => {
         setRunningTests(prev => {
@@ -168,9 +180,10 @@ const TestList = () => {
       // TestEditor ile aynı dosya adlandırma mantığı - fileName parametresi geçmeyelim
       exportTestFlow(testData);
       setOpenDropdownId(null);
+      notify.saveSuccess(`${test.name} dışa aktarıldı`);
     } catch (error) {
       console.error('Export hatası:', error);
-      alert('Test export edilirken bir hata oluştu.');
+      notify.saveError('Test dışa aktarma');
     }
   };
 

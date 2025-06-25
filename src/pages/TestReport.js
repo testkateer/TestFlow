@@ -15,11 +15,13 @@ import {
   ExternalLink
 } from 'lucide-react';
 import { downloadTestReport } from '../utils/reportUtils';
+import { useNotification } from '../contexts/NotificationContext';
 import '../styles/TestReport.css';
 
 const TestReport = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { showError, showWarning } = useNotification();
   const [activeTab, setActiveTab] = useState('overview');
   const [testDetails, setTestDetails] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -172,11 +174,11 @@ const TestReport = () => {
       if (originalReport) {
         downloadTestReport(originalReport);
       } else {
-        alert('Rapor verisi bulunamadı.');
+        showError('Rapor verisi bulunamadı.');
       }
     } catch (error) {
       console.error('Rapor indirme hatası:', error);
-      alert('Rapor indirilirken bir hata oluştu.');
+      showError('Rapor indirilirken bir hata oluştu.');
     }
   };
 
@@ -208,11 +210,11 @@ const TestReport = () => {
           navigate('/editor?rerun=true');
         }, 100);
       } else {
-        alert('Test adımları bulunamadı. Test tekrar çalıştırılamıyor.');
+        showWarning('Test adımları bulunamadı. Test tekrar çalıştırılamıyor.');
       }
     } catch (error) {
       console.error('Test tekrar çalıştırma hatası:', error);
-      alert('Test tekrar çalıştırılırken bir hata oluştu.');
+      showError('Test tekrar çalıştırılırken bir hata oluştu.');
     }
   };
 

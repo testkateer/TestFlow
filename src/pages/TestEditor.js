@@ -22,7 +22,11 @@ import { runTestWithHandling } from '../utils/testRunner';
 import { getFromStorage, setToStorage, setTempData } from '../utils/storageUtils';
 import { validateTestFlow } from '../utils/validationUtils';
 import { saveTestReportToStorage } from '../utils/reportUtils';
+import { toast, notify } from '../utils/notificationUtils';
+import { confirmActions } from '../utils/modalUtils';
 import '../styles/TestEditor.css';
+import { useNotification } from '../contexts/NotificationContext';
+import { useModal } from '../contexts/ModalContext';
 
 const TestEditor = () => {
   const navigate = useNavigate();
@@ -33,6 +37,8 @@ const TestEditor = () => {
   const [isRunning, setIsRunning] = useState(false);
   const [testResults, setTestResults] = useState(null);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const { showError } = useNotification();
+  const { showConfirm } = useModal();
 
   const stepTypes = [
     { id: 'navigate', name: 'Git', icon: Navigation, description: 'Belirtilen URL\'ye git' },
@@ -51,18 +57,16 @@ const TestEditor = () => {
   // Sayfa yüklendiğinde rerun parametresi ve düzenleme modu kontrolü
   useEffect(() => {
     const urlParams = new URLSearchParams(location.search);
-    const isRerun = urlParams.get('rerun') === 'true';
+    const isRerun = urlParams.get('rerun');
     const editTestId = urlParams.get('edit');
     
-    if (isRerun) {
+    if (isRerun === 'true') {
       try {
-        // Geçici test verilerini yükle - storageUtils kullan
-        const tempTestData = getFromStorage('temp_testRerun');
-        if (tempTestData) {
-          const { testName: rerunTestName, steps: rerunSteps } = tempTestData;
-          
+        // localStorage'dan rerun test verisini al
+        const rerunTestData = JSON.parse(localStorage.getItem('tempTestRerun') || '{}');
+        if (rerunTestData.testName && rerunTestData.steps) {
           // Icon'ları doğru şekilde map et
-          const stepsWithIcons = rerunSteps.map(step => {
+          const stepsWithIcons = rerunTestData.steps.map(step => {
             const stepType = stepTypes.find(type => type.id === step.type);
             return {
               ...step,
@@ -70,22 +74,23 @@ const TestEditor = () => {
             };
           });
           
-          setTestName(rerunTestName + ' (Tekrar)');
+          setTestName(rerunTestData.testName);
           setSteps(stepsWithIcons);
-          setHasUnsavedChanges(true);
+          setHasUnsavedChanges(false); // Rerun modunda başlangıçta değişiklik yok
           
           // Geçici veriyi temizle
+          localStorage.removeItem('tempTestRerun');
           localStorage.removeItem('temp_testRerun');
           
           // URL'den rerun parametresini temizle
           const newUrl = window.location.pathname;
           window.history.replaceState({}, '', newUrl);
           
-          console.log('Test tekrar çalıştırma için yüklendi:', rerunTestName);
+          console.log('Test tekrar çalıştırma için yüklendi:', rerunTestData.testName);
         }
       } catch (error) {
         console.error('Test tekrar yükleme hatası:', error);
-        alert('Test tekrar yüklenirken bir hata oluştu.');
+        showError('Test tekrar yüklenirken bir hata oluştu.');
       }
     } else if (editTestId) {
       try {
@@ -116,10 +121,10 @@ const TestEditor = () => {
         }
       } catch (error) {
         console.error('Test düzenleme yükleme hatası:', error);
-        alert('Test düzenlenirken bir hata oluştu.');
+        showError('Test düzenlenirken bir hata oluştu.');
       }
     }
-     }, [location.search, stepTypes]);
+  }, [location.search, stepTypes, showError]);
 
   // Sayfa kapatma/yenileme durumunda uyarı
   useEffect(() => {
@@ -137,12 +142,15 @@ const TestEditor = () => {
 
   // Sayfa içi navigasyon kontrolü
   useEffect(() => {
-    const checkUnsavedChanges = () => {
+    const checkUnsavedChanges = async () => {
       if (hasUnsavedChanges) {
-        const shouldLeave = window.confirm(
-          'Kaydedilmemiş değişiklikleriniz var. Bu sayfadan çıkmak istediğinizden emin misiniz?\n\n' +
-          'Değişikliklerinizi kaybetmemek için önce "Kaydet" butonuna tıklayabilirsiniz.'
-        );
+        const shouldLeave = await showConfirm({
+          title: 'Kaydedilmemiş Değişiklikler',
+          message: 'Kaydedilmemiş değişiklikleriniz var. Bu sayfadan çıkmak istediğinizden emin misiniz?\n\nDeğişikliklerinizi kaybetmemek için önce "Kaydet" butonuna tıklayabilirsiniz.',
+          confirmText: 'Çık',
+          cancelText: 'Kalmaya Devam Et',
+          variant: 'warning'
+        });
         return shouldLeave;
       }
       return true;
@@ -153,22 +161,26 @@ const TestEditor = () => {
     const originalReplaceState = window.history.replaceState;
 
     window.history.pushState = function(...args) {
-      if (checkUnsavedChanges()) {
-        originalPushState.apply(this, args);
-      }
+      checkUnsavedChanges().then(shouldLeave => {
+        if (shouldLeave) {
+          originalPushState.apply(this, args);
+        }
+      });
     };
 
     window.history.replaceState = function(...args) {
-      if (checkUnsavedChanges()) {
-        originalReplaceState.apply(this, args);
-      }
+      checkUnsavedChanges().then(shouldLeave => {
+        if (shouldLeave) {
+          originalReplaceState.apply(this, args);
+        }
+      });
     };
 
     return () => {
       window.history.pushState = originalPushState;
       window.history.replaceState = originalReplaceState;
     };
-  }, [hasUnsavedChanges]);
+  }, [hasUnsavedChanges, showConfirm]);
 
   const addStep = (stepType) => {
     const newStep = {
@@ -253,14 +265,18 @@ const TestEditor = () => {
             assertion: step.assertion
           }))
         });
+        
+        toast.info(`${testName} testi başlatılıyor...`);
       },
       onSuccess: (result) => {
         setTestResults(result);
         saveTestReport(result);
+        toast.success(`${testName} testi başarıyla tamamlandı!`);
       },
       onError: (result) => {
         setTestResults(result);
         saveTestReport(result);
+        toast.error(`${testName} testi başarısız oldu!`);
       },
       onFinally: () => {
         setIsRunning(false);
@@ -271,11 +287,17 @@ const TestEditor = () => {
 
 
   const handleExportTestFlow = () => {
-    const testData = {
-      testName,
-      steps
-    };
-    exportTestFlow(testData);
+    try {
+      const testData = {
+        testName,
+        steps
+      };
+      exportTestFlow(testData);
+      notify.saveSuccess(`${testName} dışa aktarıldı`);
+    } catch (error) {
+      console.error('Export hatası:', error);
+      notify.saveError('Test dışa aktarma');
+    }
   };
 
   const handleImportTestFlow = () => {
@@ -283,14 +305,15 @@ const TestEditor = () => {
       setTestName(importedData.testName);
       setSteps(importedData.steps);
       setSelectedStep(null);
+      notify.saveSuccess('Test akışı içe aktarıldı');
     });
   };
 
-  const saveTestFlow = () => {
+  const saveTestFlow = async () => {
     // Validation
     const validationResult = validateTestFlow({ testName, steps });
     if (!validationResult.isValid) {
-      alert(`❌ Validation Hatası:\n${validationResult.errors.join('\n')}`);
+      toast.error(`Validation Hatası: ${validationResult.errors.join(', ')}`);
       return;
     }
 
@@ -317,7 +340,7 @@ const TestEditor = () => {
       
       if (existingTestIndex !== -1) {
         // Varolan testi güncelle
-        const shouldUpdate = window.confirm(`"${testName}" adında bir test zaten mevcut. Güncellemek ister misiniz?`);
+        const shouldUpdate = await confirmActions.save(`"${testName}" adında bir test zaten mevcut. Güncellemek ister misiniz?`);
         if (shouldUpdate) {
           savedTests[existingTestIndex] = {
             ...savedTests[existingTestIndex],
@@ -325,14 +348,14 @@ const TestEditor = () => {
             id: savedTests[existingTestIndex].id, // Orijinal ID'yi koru
             updatedAt: new Date().toISOString()
           };
-          alert(`✅ "${testName}" test akışı başarıyla güncellendi!`);
+          notify.updateSuccess(testName);
         } else {
           return;
         }
       } else {
         // Yeni test ekle
         savedTests.push(newTest);
-        alert(`✅ "${testName}" test akışı başarıyla kaydedildi!\n\nAkışlar sayfasından görüntüleyebilirsiniz.`);
+        notify.saveSuccess(testName);
       }
 
       // localStorage'a kaydet - storage utility kullan
@@ -343,7 +366,7 @@ const TestEditor = () => {
       
     } catch (error) {
       console.error('Kaydetme hatası:', error);
-      alert(`❌ Kaydetme hatası: ${error.message}`);
+      notify.saveError(testName);
     }
   };
 

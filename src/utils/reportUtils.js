@@ -1,5 +1,6 @@
 import { getFromStorage, setToStorage } from './storageUtils';
 import { formatDate, formatTime } from './dateUtils';
+import { globalNotify } from './globalNotification';
 
 // Test raporu kaydetme - ortak fonksiyon
 export const saveTestReportToStorage = (testResult, testData) => {
@@ -107,6 +108,6 @@ export const downloadTestReport = (report) => {
     console.log('Test raporu indirildi:', report.testName);
   } catch (error) {
     console.error('Rapor indirme hatası:', error);
-    alert('Rapor indirilirken bir hata oluştu.');
+    globalNotify.reportDownloadError();
   }
 }; 
