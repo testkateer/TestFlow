@@ -165,8 +165,8 @@ const TestList = () => {
     console.log('Test verileri geçici olarak kaydedildi');
     
     // Editor sayfasına yönlendir
-    navigate(`/test-editor?edit=${test.id}`);
-    console.log('Editor sayfasına yönlendiriliyor, URL:', `/test-editor?edit=${test.id}`);
+    navigate(`/editor?edit=${test.id}`);
+    console.log('Editor sayfasına yönlendiriliyor, URL:', `/editor?edit=${test.id}`);
   };
 
   // Test export işlevi - ortak utility kullan

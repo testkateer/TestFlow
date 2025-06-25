@@ -12,9 +12,14 @@ import {
   Video,
   Monitor,
   RefreshCw,
-  ExternalLink
+  ExternalLink,
+  Play,
+  Edit
 } from 'lucide-react';
-import { downloadTestReport } from '../utils/reportUtils';
+import { downloadTestReport, saveTestReportToStorage } from '../utils/reportUtils';
+import { runTestWithHandling } from '../utils/testRunner';
+import { setTempData } from '../utils/storageUtils';
+import { toast } from '../utils/notificationUtils';
 import { useNotification } from '../contexts/NotificationContext';
 import '../styles/TestReport.css';
 
@@ -182,39 +187,107 @@ const TestReport = () => {
     }
   };
 
-  const handleRerunTest = () => {
+  // Test düzenleme işlevi - TestList.js ile aynı mantık
+  const editTest = (testData) => {
+    // Test verilerini geçici olarak kaydet - utility kullan
+    setTempData('editingTest', testData);
+    
+    // Editor sayfasına yönlendir
+    navigate(`/editor?edit=${testData.id}`);
+  };
+
+  // Rapordaki test verisini editTest için uygun formata çevir
+  const handleEditTest = () => {
     try {
       // localStorage'dan orijinal rapor verisini al
       const savedReports = JSON.parse(localStorage.getItem('testReports') || '[]');
       const originalReport = savedReports.find(r => r.id.toString() === id);
 
       if (originalReport && originalReport.results && originalReport.results.length > 0) {
-        // Orijinal test adımlarını yeniden oluştur
-        const originalSteps = originalReport.results.map((result, index) => ({
-          id: Date.now() + index, // Yeni ID'ler oluştur
-          type: result.step?.type || 'unknown',
-          name: result.step?.name || `Adım ${index + 1}`,
-          icon: getStepIcon(result.step?.type),
-          config: result.step?.config || {}
-        }));
-
-        // Test adımlarını localStorage'a geçici olarak kaydet
-        const tempData = {
-          testName: originalReport.testName,
-          steps: originalSteps
+        // Test verisini TestList formatına çevir
+        const testData = {
+          id: originalReport.id || Date.now(),
+          name: originalReport.testName,
+          description: originalReport.description || 'Test raporu',
+          steps: originalReport.results.map((result, index) => ({
+            id: Date.now() + index,
+            type: result.step?.type || 'unknown',
+            name: result.step?.name || `Adım ${index + 1}`,
+            icon: getStepIcon(result.step?.type),
+            config: result.step?.config || {}
+          })),
+          browser: 'chrome',
+          status: originalReport.status || 'pending',
+          createdAt: originalReport.date || new Date().toISOString()
         };
-        localStorage.setItem('tempTestRerun', JSON.stringify(tempData));
 
-        // TestEditor sayfasına yönlendir
-        setTimeout(() => {
-          navigate('/editor?rerun=true');
-        }, 100);
+        // Standardize edilmiş editTest fonksiyonunu kullan
+        editTest(testData);
       } else {
-        showWarning('Test adımları bulunamadı. Test tekrar çalıştırılamıyor.');
+        showWarning('Test adımları bulunamadı. Test düzenlenemiyor.');
       }
     } catch (error) {
-      console.error('Test tekrar çalıştırma hatası:', error);
-      showError('Test tekrar çalıştırılırken bir hata oluştu.');
+      console.error('Test düzenleme hatası:', error);
+      showError('Test düzenlenirken bir hata oluştu.');
+    }
+  };
+
+  // Test çalıştırma işlevi - TestList.js ile aynı mantık
+  const runTest = async (testData) => {
+    await runTestWithHandling(testData, {
+      onStart: () => {
+        toast.info(`${testData.testName} testi başlatılıyor...`);
+      },
+      onSuccess: (result) => {
+        // Test sonucunu Reports sayfası için kaydet
+        saveTestReportToStorage(result, testData);
+        toast.success(`${testData.testName} testi başarıyla tamamlandı!`);
+        
+        // Sayfa yenilensin ki yeni rapor görülsün
+        setTimeout(() => {
+          window.location.reload();
+        }, 1000);
+      },
+      onError: (result) => {
+        // Hata durumunda test raporunu kaydet
+        saveTestReportToStorage(result, testData);
+        toast.error(`${testData.testName} testi başarısız oldu!`);
+        
+        // Sayfa yenilensin ki yeni rapor görülsün
+        setTimeout(() => {
+          window.location.reload();
+        }, 1000);
+      }
+    });
+  };
+
+  // Rapordaki test verisini runTest için uygun formata çevir
+  const handleRunTest = async () => {
+    try {
+      // localStorage'dan orijinal rapor verisini al
+      const savedReports = JSON.parse(localStorage.getItem('testReports') || '[]');
+      const originalReport = savedReports.find(r => r.id.toString() === id);
+
+      if (originalReport && originalReport.results && originalReport.results.length > 0) {
+        // Test verilerini TestList formatına çevir
+        const testData = {
+          testName: originalReport.testName,
+          steps: originalReport.results.map((result, index) => ({
+            id: Date.now() + index,
+            type: result.step?.type || 'unknown',
+            name: result.step?.name || `Adım ${index + 1}`,
+            config: result.step?.config || {}
+          }))
+        };
+
+        // Standardize edilmiş runTest fonksiyonunu kullan
+        await runTest(testData);
+      } else {
+        showWarning('Test adımları bulunamadı. Test çalıştırılamıyor.');
+      }
+    } catch (error) {
+      console.error('Test çalıştırma hatası:', error);
+      showError('Test çalıştırılırken bir hata oluştu.');
     }
   };
 
@@ -300,9 +373,13 @@ const TestReport = () => {
             <Download size={16} />
             Raporu İndir
           </button>
-          <button className="btn btn-primary" onClick={handleRerunTest}>
-            <RefreshCw size={16} />
-            Tekrar Çalıştır
+          <button className="btn btn-success" onClick={handleRunTest}>
+            <Play size={16} />
+            Çalıştır
+          </button>
+          <button className="btn btn-primary" onClick={handleEditTest}>
+            <Edit size={16} />
+            Düzenle
           </button>
         </div>
       </div>
