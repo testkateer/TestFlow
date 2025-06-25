@@ -37,6 +37,7 @@ const TestEditor = () => {
   const [isRunning, setIsRunning] = useState(false);
   const [testResults, setTestResults] = useState(null);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [originalData, setOriginalData] = useState({ testName: 'Yeni Test Senaryosu', steps: [] });
   const { showError } = useNotification();
   const { showConfirm } = useModal();
 
@@ -49,10 +50,13 @@ const TestEditor = () => {
     { id: 'refresh', name: 'Yenile', icon: RefreshCw, description: 'Sayfayı yenile' }
   ];
 
-  // Steps değiştiğinde unsaved changes durumunu güncelle
+  // Test adı ve steps değiştiğinde unsaved changes durumunu kontrol et
   useEffect(() => {
-    setHasUnsavedChanges(steps.length > 0);
-  }, [steps]);
+    const hasChanges = 
+      testName !== originalData.testName || 
+      JSON.stringify(steps) !== JSON.stringify(originalData.steps);
+    setHasUnsavedChanges(hasChanges);
+  }, [testName, steps, originalData]);
 
   // Sayfa yüklendiğinde rerun parametresi ve düzenleme modu kontrolü
   useEffect(() => {
@@ -76,7 +80,7 @@ const TestEditor = () => {
           
           setTestName(rerunTestData.testName);
           setSteps(stepsWithIcons);
-          setHasUnsavedChanges(false); // Rerun modunda başlangıçta değişiklik yok
+          setOriginalData({ testName: rerunTestData.testName, steps: stepsWithIcons });
           
           // Geçici veriyi temizle
           localStorage.removeItem('tempTestRerun');
@@ -108,7 +112,7 @@ const TestEditor = () => {
           
           setTestName(editingTestData.name || 'Yeni Test Senaryosu');
           setSteps(stepsWithIcons);
-          setHasUnsavedChanges(false); // Düzenleme modunda başlangıçta değişiklik yok
+          setOriginalData({ testName: editingTestData.name || 'Yeni Test Senaryosu', steps: stepsWithIcons });
           
           // Geçici veriyi temizle
           localStorage.removeItem('temp_editingTest');
@@ -146,9 +150,9 @@ const TestEditor = () => {
       if (hasUnsavedChanges) {
         const shouldLeave = await showConfirm({
           title: 'Kaydedilmemiş Değişiklikler',
-          message: 'Kaydedilmemiş değişiklikleriniz var. Bu sayfadan çıkmak istediğinizden emin misiniz?\n\nDeğişikliklerinizi kaybetmemek için önce "Kaydet" butonuna tıklayabilirsiniz.',
+          message: 'Kaydedilmemiş değişiklikleriniz var. Bu sayfadan çıkmak istediğinizden emin misiniz?',
           confirmText: 'Çık',
-          cancelText: 'Kalmaya Devam Et',
+          cancelText: 'Kal',
           variant: 'warning'
         });
         return shouldLeave;
@@ -232,8 +236,7 @@ const TestEditor = () => {
       }));
     }
     
-    // Konfigürasyon değişikliği yapıldığında unsaved changes işaretle
-    setHasUnsavedChanges(true);
+    // hasUnsavedChanges artık otomatik olarak useEffect'te hesaplanıyor
   };
 
   // Test raporu kaydetme - ortak utility kullan
@@ -305,6 +308,8 @@ const TestEditor = () => {
       setTestName(importedData.testName);
       setSteps(importedData.steps);
       setSelectedStep(null);
+      // Import sonrası originalData güncelle (unsaved changes olarak işaretle)
+      setOriginalData({ testName: 'Yeni Test Senaryosu', steps: [] });
       notify.saveSuccess('Test akışı içe aktarıldı');
     });
   };
@@ -361,8 +366,8 @@ const TestEditor = () => {
       // localStorage'a kaydet - storage utility kullan
       setToStorage('savedTestFlows', savedTests);
       
-      // Kaydetme başarılı olduğunda unsaved changes'i temizle
-      setHasUnsavedChanges(false);
+      // Kaydetme başarılı olduğunda original data'yı güncelle
+      setOriginalData({ testName, steps });
       
     } catch (error) {
       console.error('Kaydetme hatası:', error);
@@ -380,7 +385,6 @@ const TestEditor = () => {
               value={testName} 
               onChange={(e) => {
                 setTestName(e.target.value);
-                setHasUnsavedChanges(true);
               }}
               className="test-name-input"
               placeholder="Test adı girin..."
