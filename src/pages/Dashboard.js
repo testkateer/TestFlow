@@ -56,6 +56,9 @@ const Dashboard = () => {
       const failedTests = recentReports.filter(report => report.status === 'error').length;
       const currentRunningTests = checkRunningTests(); // Gerçek zamanlı çalışan testler
       
+      // Başarı oranını hesapla
+      const successRate = totalTests > 0 ? Math.round((successfulTests / totalTests) * 100) : 0;
+      
       return [
         { 
           label: 'Toplam Test', 
@@ -68,6 +71,10 @@ const Dashboard = () => {
         { 
           label: 'Başarısız', 
           value: failedTests.toString()
+        },
+        { 
+          label: 'Başarı Oranı', 
+          value: `%${successRate}`
         },
         { 
           label: 'Çalışıyor', 
