@@ -1,89 +1,112 @@
-    export const downloadTestReport = (report) => {
+import { getFromStorage, setToStorage } from './storageUtils';
+import { formatDate, formatTime } from './dateUtils';
+
+// Test raporu kaydetme - ortak fonksiyon
+export const saveTestReportToStorage = (testResult, testData) => {
   try {
-    // Test adım detaylarını .txt formatında oluştur
-    const generateReportText = () => {
-      const separator = '='.repeat(50);
-      const stepSeparator = '-'.repeat(30);
-      
-      let reportText = `${separator}\n`;
-      reportText += `TEST RAPORU\n`;
-      reportText += `${separator}\n\n`;
-      
-      // Genel bilgiler
-      reportText += `📊 GENEL BİLGİLER\n`;
-      reportText += `${stepSeparator}\n`;
-      reportText += `Test Adı: ${report.testName}\n`;
-      reportText += `Açıklama: ${report.description}\n`;
-      reportText += `Durum: ${report.status === 'success' ? '✅ Başarılı' : '❌ Başarısız'}\n`;
-      reportText += `Tarih: ${report.date} ${report.time}\n`;
-      reportText += `Süre: ${report.duration}\n`;
-      reportText += `Tetikleyici: ${report.trigger}\n`;
-      reportText += `Toplam Adım: ${report.totalSteps}\n`;
-      reportText += `Başarılı Adım: ${report.passedSteps}\n`;
-      reportText += `Başarısız Adım: ${report.totalSteps - report.passedSteps}\n`;
-      reportText += `Başarı Oranı: ${Math.round((report.passedSteps / report.totalSteps) * 100)}%\n\n`;
-      
-      // Adım detayları
-      reportText += `🔄 ADIM DETAYLARI\n`;
-      reportText += `${stepSeparator}\n`;
-      
-      if (report.results && report.results.length > 0) {
-        report.results.forEach((result, index) => {
-          const stepNum = index + 1;
-          const step = result.step || {};
-          const stepResult = result.result || {};
-          const status = stepResult.success ? '✅' : '❌';
-          
-          reportText += `\nAdım ${stepNum}: ${step.name || 'İsimsiz Adım'}\n`;
-          reportText += `Tür: ${step.type || 'Bilinmiyor'}\n`;
-          reportText += `Durum: ${status} ${stepResult.success ? 'Başarılı' : 'Başarısız'}\n`;
-          
-          // Açıklama ve hata ayrımı
-          if (stepResult.success) {
-            reportText += `Açıklama: ${stepResult.message || step.config?.url || step.config?.selector || 'Başarıyla tamamlandı'}\n`;
-          } else {
-            reportText += `Açıklama: ${step.config?.url || step.config?.selector || 'Test adımı'}\n`;
-            if (stepResult.error || stepResult.message) {
-              reportText += `❌ Hata: ${stepResult.error || stepResult.message}\n`;
-            }
-          }
-          
-          reportText += `Zaman: ${new Date(result.timestamp).toLocaleString('tr-TR')}\n`;
-        });
-      } else {
-        reportText += `\nAdım detayları bulunamadı.\n`;
-      }
-      
-      reportText += `\n${separator}\n`;
-      reportText += `Bu rapor TestFlow tarafından otomatik olarak oluşturulmuştur.\n`;
-      reportText += `Oluşturma Zamanı: ${new Date().toLocaleString('tr-TR')}\n`;
-      reportText += `${separator}\n`;
-      
-      return reportText;
+    // Mevcut raporları al - storage utility kullan
+    const existingReports = getFromStorage('testReports', []);
+    
+    // Test durumunu daha detaylı analiz et
+    const totalSteps = testResult.totalSteps || (testData.steps ? testData.steps.length : 0);
+    const successfulSteps = testResult.successfulSteps || 0;
+    const completedSteps = testResult.completedSteps || (testResult.results ? testResult.results.length : 0);
+    
+    // Test durumunu belirle:
+    // - Tüm adımlar tamamlandı ve başarılıysa: success
+    // - Adımlar başarısız oldu veya tamamlanamadıysa: error
+    const isSuccess = testResult.success && 
+                     (completedSteps === totalSteps) && 
+                     (successfulSteps === totalSteps);
+    
+    // Yeni rapor verisi oluştur
+    const newReport = {
+      id: Date.now(),
+      testName: testData.testName || testData.name || 'İsimsiz Test',
+      description: `${totalSteps} adımlı test akışı`,
+      status: isSuccess ? 'success' : 'error',
+      duration: testResult.duration || calculateTestDuration(testResult),
+      date: formatDate(new Date()),
+      time: formatTime(new Date()),
+      passedSteps: successfulSteps,
+      totalSteps: totalSteps,
+      completedSteps: completedSteps,
+      trigger: 'Manuel',
+      results: testResult.results || [],
+      timestamp: new Date().toISOString()
+    };
+    
+    // Yeni raporu listeye ekle (en yeni en başta)
+    existingReports.unshift(newReport);
+    
+    // Maksimum 100 rapor tut (performans için)
+    if (existingReports.length > 100) {
+      existingReports.splice(100);
+    }
+    
+    // localStorage'a kaydet - storage utility kullan
+    setToStorage('testReports', existingReports);
+    
+    console.log('Test raporu kaydedildi:', newReport);
+    return newReport;
+  } catch (error) {
+    console.error('Test raporu kaydetme hatası:', error);
+    return null;
+  }
+};
+
+// Test süresi hesaplama - ortak fonksiyon
+export const calculateTestDuration = (testResult) => {
+  if (!testResult.results || testResult.results.length === 0) {
+    return '0s';
+  }
+  
+  // İlk ve son adım arasındaki süreyi hesapla
+  const firstStep = new Date(testResult.results[0].timestamp);
+  const lastStep = new Date(testResult.results[testResult.results.length - 1].timestamp);
+  const durationMs = lastStep - firstStep;
+  
+  if (durationMs < 1000) {
+    return `${durationMs}ms`;
+  } else if (durationMs < 60000) {
+    return `${Math.round(durationMs / 1000)}s`;
+  } else {
+    return `${Math.floor(durationMs / 60000)}m ${Math.round((durationMs % 60000) / 1000)}s`;
+  }
+};
+
+// Test raporu indirme (Reports sayfasından)
+export const downloadTestReport = (report) => {
+  try {
+    const reportData = {
+      testName: report.testName,
+      status: report.status,
+      duration: report.duration,
+      date: report.date,
+      time: report.time,
+      passedSteps: report.passedSteps,
+      totalSteps: report.totalSteps,
+      completedSteps: report.completedSteps,
+      trigger: report.trigger,
+      results: report.results || [],
+      exportDate: new Date().toISOString()
     };
 
-    // Dosya adını oluştur
-    const fileName = `${report.testName.replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '_')}_${report.date.replace(/\./g, '-')}_rapor.txt`;
-    
-    // Dosyayı indir
-    const reportContent = generateReportText();
-    const blob = new Blob([reportContent], { type: 'text/plain;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
+    const dataStr = JSON.stringify(reportData, null, 2);
+    const dataBlob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(dataBlob);
     
     const link = document.createElement('a');
     link.href = url;
-    link.download = fileName;
+    link.download = `${report.testName.replace(/\s+/g, '_')}_rapor.json`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    
     URL.revokeObjectURL(url);
-    
-    // Başarı mesajı
-    console.log(`✅ Test raporu başarıyla indirildi: ${fileName}`);
-    
+
+    console.log('Test raporu indirildi:', report.testName);
   } catch (error) {
     console.error('Rapor indirme hatası:', error);
-    alert(`❌ Rapor indirme hatası: ${error.message}`);
+    alert('Rapor indirilirken bir hata oluştu.');
   }
 }; 

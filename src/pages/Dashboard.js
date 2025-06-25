@@ -10,6 +10,8 @@ import {
   AlertCircle,
   RefreshCw
 } from 'lucide-react';
+import { getFromStorage } from '../utils/storageUtils';
+import { formatRelativeTime } from '../utils/dateUtils';
 import '../styles/Dashboard.css';
 
 const Dashboard = () => {
@@ -20,11 +22,11 @@ const Dashboard = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Gerçek veri yükleme fonksiyonları
+  // Gerçek veri yükleme fonksiyonları - storage utility kullan
   const loadTestSummaryFromStorage = () => {
     try {
-      const testReports = JSON.parse(localStorage.getItem('testReports') || '[]');
-      const savedTests = JSON.parse(localStorage.getItem('savedTestFlows') || '[]');
+      const testReports = getFromStorage('testReports', []);
+      const savedTests = getFromStorage('savedTestFlows', []);
       
       // Son 30 güne ait raporları al
       const thirtyDaysAgo = new Date();
@@ -102,7 +104,7 @@ const Dashboard = () => {
 
   const loadRecentTestsFromStorage = () => {
     try {
-      const testReports = JSON.parse(localStorage.getItem('testReports') || '[]');
+      const testReports = getFromStorage('testReports', []);
       
       // En son 4 test raporunu al ve tarih sırasına göre sırala
       return testReports
@@ -123,7 +125,7 @@ const Dashboard = () => {
 
   const loadScheduledTestsFromStorage = () => {
     try {
-      const savedTests = JSON.parse(localStorage.getItem('savedTestFlows') || '[]');
+      const savedTests = getFromStorage('savedTestFlows', []);
       
       // Kaydedilmiş testleri planlanmış testler olarak göster
       // (Gerçek zamanlama sistemi olmadığı için mock bir yaklaşım)

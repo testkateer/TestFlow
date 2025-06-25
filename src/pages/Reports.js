@@ -13,6 +13,7 @@ import {
   BarChart3
 } from 'lucide-react';
 import { downloadTestReport } from '../utils/reportUtils';
+import { getFromStorage } from '../utils/storageUtils';
 import '../styles/Reports.css';
 
 const Reports = () => {
@@ -22,16 +23,11 @@ const Reports = () => {
   const [filterDate, setFilterDate] = useState('all');
   const [reportsList, setReportsList] = useState([]);
 
-  // Test raporlarını localStorage'dan yükle
+  // Test raporlarını localStorage'dan yükle - storage utility kullan
   useEffect(() => {
     const loadReports = () => {
-      try {
-        const savedReports = JSON.parse(localStorage.getItem('testReports') || '[]');
-        setReportsList(savedReports);
-      } catch (error) {
-        console.error('Raporlar yükleme hatası:', error);
-        setReportsList([]);
-      }
+      const savedReports = getFromStorage('testReports', []);
+      setReportsList(savedReports);
     };
 
     loadReports();

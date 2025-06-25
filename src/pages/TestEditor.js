@@ -18,6 +18,10 @@ import {
   AlertCircle
 } from 'lucide-react';
 import { exportTestFlow, importTestFlow } from '../utils/testUtils';
+import { runTestWithHandling } from '../utils/testRunner';
+import { getFromStorage, setToStorage, setTempData } from '../utils/storageUtils';
+import { validateTestFlow } from '../utils/validationUtils';
+import { saveTestReportToStorage } from '../utils/reportUtils';
 import '../styles/TestEditor.css';
 
 const TestEditor = () => {
@@ -52,10 +56,10 @@ const TestEditor = () => {
     
     if (isRerun) {
       try {
-        // Geçici test verilerini yükle
-        const tempTestData = localStorage.getItem('tempTestRerun');
+        // Geçici test verilerini yükle - storageUtils kullan
+        const tempTestData = getFromStorage('temp_testRerun');
         if (tempTestData) {
-          const { testName: rerunTestName, steps: rerunSteps } = JSON.parse(tempTestData);
+          const { testName: rerunTestName, steps: rerunSteps } = tempTestData;
           
           // Icon'ları doğru şekilde map et
           const stepsWithIcons = rerunSteps.map(step => {
@@ -71,7 +75,7 @@ const TestEditor = () => {
           setHasUnsavedChanges(true);
           
           // Geçici veriyi temizle
-          localStorage.removeItem('tempTestRerun');
+          localStorage.removeItem('temp_testRerun');
           
           // URL'den rerun parametresini temizle
           const newUrl = window.location.pathname;
@@ -85,13 +89,11 @@ const TestEditor = () => {
       }
     } else if (editTestId) {
       try {
-        // Düzenleme modunda test verilerini yükle
-        const editingTestData = localStorage.getItem('editingTest');
+        // Düzenleme modunda test verilerini yükle - storageUtils kullan
+        const editingTestData = getFromStorage('temp_editingTest');
         if (editingTestData) {
-          const testData = JSON.parse(editingTestData);
-          
           // Icon'ları doğru şekilde map et
-          const stepsWithIcons = (testData.steps || []).map(step => {
+          const stepsWithIcons = (editingTestData.steps || []).map(step => {
             const stepType = stepTypes.find(type => type.id === step.type);
             return {
               ...step,
@@ -99,18 +101,18 @@ const TestEditor = () => {
             };
           });
           
-          setTestName(testData.name || 'Yeni Test Senaryosu');
+          setTestName(editingTestData.name || 'Yeni Test Senaryosu');
           setSteps(stepsWithIcons);
           setHasUnsavedChanges(false); // Düzenleme modunda başlangıçta değişiklik yok
           
           // Geçici veriyi temizle
-          localStorage.removeItem('editingTest');
+          localStorage.removeItem('temp_editingTest');
           
           // URL'den edit parametresini temizle
           const newUrl = window.location.pathname;
           window.history.replaceState({}, '', newUrl);
           
-          console.log('Test düzenleme için yüklendi:', testData.name);
+          console.log('Test düzenleme için yüklendi:', editingTestData.name);
         }
       } catch (error) {
         console.error('Test düzenleme yükleme hatası:', error);
@@ -222,142 +224,48 @@ const TestEditor = () => {
     setHasUnsavedChanges(true);
   };
 
+  // Test raporu kaydetme - ortak utility kullan
   const saveTestReport = (testResult) => {
-    try {
-      // Mevcut raporları al
-      const existingReports = JSON.parse(localStorage.getItem('testReports') || '[]');
-      
-      // Test durumunu daha detaylı analiz et
-      const totalSteps = testResult.totalSteps || steps.length;
-      const successfulSteps = testResult.successfulSteps || 0;
-      const completedSteps = testResult.completedSteps || (testResult.results ? testResult.results.length : 0);
-      
-      // Test durumunu belirle:
-      // - Tüm adımlar tamamlandı ve başarılıysa: success
-      // - Adımlar başarısız oldu veya tamamlanamadıysa: error
-      const isSuccess = testResult.success && 
-                       (completedSteps === totalSteps) && 
-                       (successfulSteps === totalSteps);
-      
-      // Yeni rapor verisi oluştur
-      const newReport = {
-        id: Date.now(),
-        testName: testName || 'İsimsiz Test',
-        description: `${steps.length} adımlı test akışı`,
-        status: isSuccess ? 'success' : 'error',
-        duration: testResult.duration || calculateTestDuration(testResult),
-        date: new Date().toLocaleDateString('tr-TR'),
-        time: new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' }),
-        passedSteps: successfulSteps,
-        totalSteps: totalSteps,
-        completedSteps: completedSteps,
-        trigger: 'Manuel',
-        results: testResult.results || [],
-        timestamp: new Date().toISOString()
-      };
-      
-      // Yeni raporu listeye ekle (en yeni en başta)
-      existingReports.unshift(newReport);
-      
-      // Maksimum 100 rapor tut (performans için)
-      if (existingReports.length > 100) {
-        existingReports.splice(100);
-      }
-      
-      // localStorage'a kaydet
-      localStorage.setItem('testReports', JSON.stringify(existingReports));
-      
-      console.log('Test raporu kaydedildi:', newReport);
-    } catch (error) {
-      console.error('Test raporu kaydetme hatası:', error);
-    }
+    const testData = { testName, steps };
+    saveTestReportToStorage(testResult, testData);
   };
 
-  const calculateTestDuration = (testResult) => {
-    if (!testResult.results || testResult.results.length === 0) {
-      return '0s';
-    }
-    
-    // İlk ve son adım arasındaki süreyi hesapla
-    const firstStep = new Date(testResult.results[0].timestamp);
-    const lastStep = new Date(testResult.results[testResult.results.length - 1].timestamp);
-    const durationMs = lastStep - firstStep;
-    
-    if (durationMs < 1000) {
-      return `${durationMs}ms`;
-    } else if (durationMs < 60000) {
-      return `${Math.round(durationMs / 1000)}s`;
-    } else {
-      const minutes = Math.floor(durationMs / 60000);
-      const seconds = Math.round((durationMs % 60000) / 1000);
-      return `${minutes}m ${seconds}s`;
-    }
-  };
+  // calculateTestDuration artık reportUtils'de, yerel fonksiyonu kaldır
 
+  // Test çalıştırma işlevi - ortak utility kullan
   const runTest = async () => {
-    if (steps.length === 0) {
-      alert('Test çalıştırmak için en az bir adım eklemelisiniz!');
-      return;
-    }
-
-    setIsRunning(true);
-    setTestResults(null);
-
-    try {
-      // Browser environment - API endpoint'e istek gönder
-      const response = await fetch('/api/run-test', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
+    const testData = { testName, steps };
+    
+    await runTestWithHandling(testData, {
+      onStart: () => {
+        setIsRunning(true);
+        setTestResults(null);
+        
+        // Test verilerini geçici olarak kaydet (tekrar çalıştırma için)
+        setTempData('testRerun', {
           testName,
-          steps
-        })
-      });
-      
-      // Server bağlantı kontrolü
-      if (!response.ok) {
-        throw new Error(`Server hatası: ${response.status} - ${response.statusText}`);
+          steps: steps.map(step => ({
+            type: step.type,
+            action: step.action,
+            selector: step.selector,
+            value: step.value,
+            wait: step.wait,
+            assertion: step.assertion
+          }))
+        });
+      },
+      onSuccess: (result) => {
+        setTestResults(result);
+        saveTestReport(result);
+      },
+      onError: (result) => {
+        setTestResults(result);
+        saveTestReport(result);
+      },
+      onFinally: () => {
+        setIsRunning(false);
       }
-
-      // Content-Type kontrolü
-      const contentType = response.headers.get('content-type');
-      if (!contentType || !contentType.includes('application/json')) {
-        const text = await response.text();
-        throw new Error(`Server JSON dönmedi. Yanıt: ${text.substring(0, 100)}...`);
-      }
-      
-      const result = await response.json();
-      setTestResults(result);
-      
-      // Test sonucunu Reports sayfası için localStorage'a kaydet
-      saveTestReport(result);
-      
-      const totalSteps = result.totalSteps || steps.length;
-      const successfulSteps = result.successfulSteps || 0;
-      const completedSteps = result.completedSteps || (result.results ? result.results.length : 0);
-      
-      if (result.success && completedSteps === totalSteps && successfulSteps === totalSteps) {
-        alert(`✅ Test başarıyla tamamlandı!\n\n📊 Sonuç: ${successfulSteps}/${totalSteps} adım başarılı`);
-      } else if (completedSteps < totalSteps) {
-        alert(`⚠️ Test tamamlanamadı!\n\n📊 Sonuç: ${completedSteps}/${totalSteps} adım tamamlandı\n✅ Başarılı: ${successfulSteps}\n❌ Başarısız: ${completedSteps - successfulSteps}`);
-      } else {
-        alert(`❌ Test başarısız!\n\n📊 Sonuç: ${successfulSteps}/${totalSteps} adım başarılı\n${result.error ? `\nHata: ${result.error}` : ''}`);
-      }
-      
-    } catch (error) {
-      console.error('Test çalıştırma hatası:', error);
-      
-      // Hata mesajına server durum kontrolü ekle
-      if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
-        alert(`❌ Server bağlantı hatası!\n\nLütfen şunları kontrol edin:\n1. 'npm run server' komutu ile server'ı başlattınız mı?\n2. Server 3001 portunda çalışıyor mu?\n\nHata: ${error.message}`);
-      } else {
-        alert(`Test çalıştırma hatası: ${error.message}`);
-      }
-    } finally {
-      setIsRunning(false);
-    }
+    });
   };
 
 
@@ -379,19 +287,16 @@ const TestEditor = () => {
   };
 
   const saveTestFlow = () => {
-    if (!testName.trim()) {
-      alert('❌ Test adı boş olamaz!');
-      return;
-    }
-
-    if (steps.length === 0) {
-      alert('❌ Test akışı boş olamaz! En az bir adım eklemelisiniz.');
+    // Validation
+    const validationResult = validateTestFlow({ testName, steps });
+    if (!validationResult.isValid) {
+      alert(`❌ Validation Hatası:\n${validationResult.errors.join('\n')}`);
       return;
     }
 
     try {
-      // Mevcut kaydedilmiş testleri al
-      const savedTests = JSON.parse(localStorage.getItem('savedTestFlows') || '[]');
+      // Mevcut kaydedilmiş testleri al - storage utility kullan
+      const savedTests = getFromStorage('savedTestFlows', []);
       
       // Yeni test verisi oluştur
       const newTest = {
@@ -430,8 +335,8 @@ const TestEditor = () => {
         alert(`✅ "${testName}" test akışı başarıyla kaydedildi!\n\nAkışlar sayfasından görüntüleyebilirsiniz.`);
       }
 
-      // localStorage'a kaydet
-      localStorage.setItem('savedTestFlows', JSON.stringify(savedTests));
+      // localStorage'a kaydet - storage utility kullan
+      setToStorage('savedTestFlows', savedTests);
       
       // Kaydetme başarılı olduğunda unsaved changes'i temizle
       setHasUnsavedChanges(false);
