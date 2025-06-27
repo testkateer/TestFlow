@@ -325,14 +325,14 @@ const TestEditor = () => {
             <Download size={16} />
             Dışa Aktar
           </button>
-          <button className="btn btn-primary" onClick={saveTestFlow} disabled={!hasUnsavedChanges}>
+          <button className="btn btn-primary" onClick={saveTestFlow} disabled={!hasUnsavedChanges || steps.length === 0}>
             <Save size={16} />
             Kaydet
           </button>
           <button 
             className={`btn btn-success ${isRunning ? 'disabled' : ''}`}
             onClick={runTest}
-            disabled={isRunning}
+            disabled={isRunning || steps.length === 0}
           >
             <Play size={16} />
             {isRunning ? 'Çalışıyor...' : 'Çalıştır'}
