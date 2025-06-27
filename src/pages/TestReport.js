@@ -390,7 +390,10 @@ const TestReport = () => {
       <div className="test-info-card card">
         <div className="test-meta">
           <div className="test-title">
-            <h1>{testDetails.name}</h1>
+            <h1>
+              {testDetails.name}
+              <span className="test-id-display">{testDetails.id}</span>
+            </h1>
             <span className={`status-badge status-${testDetails.status} large`}>
               {getStatusIcon(testDetails.status)}
               {testDetails.status === 'success' && 'Başarılı'}
@@ -629,7 +632,7 @@ const TestReport = () => {
                     <th>Durum</th>
                     <th>Süre</th>
                     <th>Tetikleyici</th>
-                    <th>Aksiyonlar</th>
+                    <th>Loglar</th>
                   </tr>
                 </thead>
                 <tbody>

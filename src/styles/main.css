@@ -1063,18 +1063,20 @@ tbody tr:hover {
   flex-grow: 0.3;
 }
 
-.search-bar svg {
+/* Search icon */
+.search-bar > svg {
   position: absolute;
   left: var(--spacing-md);
   top: 50%;
   transform: translateY(-50%);
   color: var(--text-muted);
   z-index: 1;
+  pointer-events: none;
 }
 
 .search-bar input {
   width: 100%;
-  padding: var(--spacing-sm) var(--spacing-3xl) var(--spacing-sm) calc(var(--spacing-xl) + var(--spacing-2xl));
+  padding: var(--spacing-sm) var(--space-10) var(--spacing-sm) calc(var(--spacing-xl) + var(--spacing-xl));
   border: 1px solid var(--border-primary);
   border-radius: var(--radius-md);
   font-size: var(--font-sm);
@@ -1096,9 +1098,9 @@ tbody tr:hover {
 /* Search Clear Button */
 .search-clear-btn {
   position: absolute;
-  right: var(--spacing-sm);
+  right: var(--spacing-md);
   top: 50%;
-  transform: translateY(-50%) translateX(100%);
+  transform: translateY(-50%);
   background: none;
   border: none;
   color: var(--text-muted);
@@ -1116,6 +1118,64 @@ tbody tr:hover {
   color: var(--text-primary);
   background-color: var(--bg-tertiary);
 }
+
+/* Test Editor - Test Name Input */
+.test-name-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.test-name-wrapper .edit-icon {
+  position: absolute;
+  left: var(--space-3);
+  color: var(--text-muted);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.test-name-wrapper .test-name-input {
+  width: 100%;
+  padding: var(--spacing-sm) var(--space-10) var(--spacing-sm) calc(var(--spacing-xl) + var(--spacing-xl));
+  transform: translateY(10%);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-md);
+  font-size: var(--font-sm);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  outline: none;
+  transition: border-color var(--transition-normal), box-shadow var(--transition-normal);
+}
+
+.test-name-wrapper .test-name-input:focus {
+  outline: none;
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.test-name-wrapper .test-name-clear-btn {
+  right: var(--space-3);
+  top: 50%;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: var(--spacing-xs);
+  border-radius: var(--radius-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition-fast);
+  z-index: 2;
+  transform: translateX(-150%);
+}
+
+.test-name-wrapper .test-name-clear-btn:hover {
+  color: var(--text-primary);
+  background-color: var(--bg-tertiary);
+}
+
 
 /* Filter Group */
 .filter-group {
@@ -1995,6 +2055,13 @@ h1 svg, h2 svg, h3 svg, h4 svg, h5 svg, h6 svg {
 /* ============================================
    PAGE-SPECIFIC STYLES
    ============================================ */
+
+.test-id-display {
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+  margin-left: var(--space-2);
+  font-weight: var(--font-weight-normal);
+}
 
 /* ============================================
    PAGE LAYOUT PATTERNS
@@ -4706,20 +4773,4 @@ h1 svg, h2 svg, h3 svg, h4 svg, h5 svg, h6 svg {
     max-width: calc(100vw - 32px);
     margin: 0 16px 8px;
   }
-}
-
-.test-name-clear-btn {
-  background: none;
-  border: none;
-  color: var(--text-muted);
-  cursor: pointer;
-  padding: var(--spacing-xs);
-  border-radius: var(--radius-full);
-  transition: all var(--transition-fast);
-  z-index: 2;
-}
-
-.test-name-clear-btn:hover {
-  color: var(--text-primary);
-  background-color: var(--bg-tertiary);
 }

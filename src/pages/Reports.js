@@ -200,7 +200,7 @@ const Reports = () => {
                 <th>Süre</th>
                 <th>Tarih & Saat</th>
                 <th>Tetikleyici</th>
-                <th>Aksiyonlar</th>
+                <th>Loglar</th>
               </tr>
             </thead>
             <tbody>
@@ -217,7 +217,10 @@ const Reports = () => {
                 <tr key={report.id}>
                   <td>
                     <div className="test-info">
-                      <h4>{testName}</h4>
+                      <h4>
+                        {testName}
+                        <span className="test-id-display">{report.id}</span>
+                      </h4>
                       <p>{description}</p>
                     </div>
                   </td>

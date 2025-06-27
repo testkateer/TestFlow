@@ -513,7 +513,10 @@ const TestList = () => {
                 )}
                 <div className="test-info">
                   <div className="test-name-row">
-                    <h3 className="test-name">{test.name}</h3>
+                    <h3 className="test-name">
+                      {test.name}
+                      <span className="test-id-display">{test.id}</span>
+                    </h3>
                     <button
                       className={`favorite-btn ${test.isFavorite ? 'active' : ''}`}
                       onClick={() => toggleFavorite(test.id)}
