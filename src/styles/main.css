@@ -1654,9 +1654,10 @@ h1 svg, h2 svg, h3 svg, h4 svg, h5 svg, h6 svg {
 }
 
 .content-wrapper {
-  padding: var(--spacing-2xl);
-  max-width: 1400px;
-  margin: 0 auto;
+  padding: var(--spacing-3xl);
+  max-width: 100%;
+  margin: 0 auto; 
+  min-width: 100%;
 }
 
 /* Modal Component */
@@ -2497,11 +2498,6 @@ h1 svg, h2 svg, h3 svg, h4 svg, h5 svg, h6 svg {
 }
 
 /* Reports Styles */
-.reports-page {
-  padding: var(--spacing-2xl);
-  max-width: 1400px;
-  margin: 0 auto;
-}
 
 .page-header {
   display: flex;
@@ -2705,10 +2701,7 @@ h1 svg, h2 svg, h3 svg, h4 svg, h5 svg, h6 svg {
   flex-wrap: wrap;
 }
 
-/* Scheduling Styles */
-.scheduling-page {
-  max-width: 1200px;
-}
+  /* Scheduling Styles */
 
 .tests-summary {
   margin-bottom: var(--spacing-2xl);
@@ -3025,10 +3018,6 @@ h1 svg, h2 svg, h3 svg, h4 svg, h5 svg, h6 svg {
 }
 
 /* Settings Styles */
-.settings-page {
-  max-width: 1400px;
-  margin: 0 auto;
-}
 
 .settings-layout {
   display: grid;
@@ -3440,10 +3429,6 @@ h1 svg, h2 svg, h3 svg, h4 svg, h5 svg, h6 svg {
 }
 
 /* Test Editor Styles */
-.test-editor {
-  max-width: 1400px;
-  margin: 0 auto;
-}
 
 .editor-header {
   display: flex;
@@ -3825,9 +3810,6 @@ h1 svg, h2 svg, h3 svg, h4 svg, h5 svg, h6 svg {
 }
 
 /* Test List Styles */
-.test-list-page {
-  max-width: 1200px;
-}
 
 .tests-container {
   margin-bottom: var(--spacing-3xl);
