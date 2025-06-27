@@ -6,7 +6,15 @@ import {
   Clock,
   Chrome,
   Globe,
-  Smartphone
+  Smartphone,
+  Settings,
+  Bot,
+  Navigation,
+  MousePointer,
+  Type,
+  Eye,
+  RefreshCw,
+  Zap
 } from 'lucide-react';
 
 // Test durumu için icon döndür
@@ -59,13 +67,15 @@ export const getBrowserIcon = (browser, size = 16) => {
   }
 };
 
-// Test tipi için emoji döndür
-export const getTestTypeIcon = (type) => {
+// Test tipi için icon döndür
+export const getTestTypeIcon = (type, size = 12) => {
+  const iconProps = { size };
+  
   switch (type) {
-    case 'scheduled': return '⏰';
-    case 'manual': return '🔧';
-    case 'automated': return '🤖';
-    default: return '🔧';
+    case 'scheduled': return <Clock {...iconProps} />;
+    case 'manual': return <Settings {...iconProps} />;
+    case 'automated': return <Bot {...iconProps} />;
+    default: return <Settings {...iconProps} />;
   }
 };
 
@@ -79,16 +89,18 @@ export const getTestTypeText = (type) => {
   }
 };
 
-// Adım tipi için emoji döndür
-export const getStepTypeIcon = (type) => {
+// Adım tipi için icon döndür
+export const getStepTypeIcon = (type, size = 12) => {
+  const iconProps = { size };
+  
   switch (type) {
-    case 'navigate': return '🌐';
-    case 'click': return '👆';
-    case 'input': return '⌨️';
-    case 'verify': return '👁️';
-    case 'wait': return '⏱️';
-    case 'refresh': return '🔄';
-    default: return '⚡';
+    case 'navigate': return <Navigation {...iconProps} />;
+    case 'click': return <MousePointer {...iconProps} />;
+    case 'input': return <Type {...iconProps} />;
+    case 'verify': return <Eye {...iconProps} />;
+    case 'wait': return <Clock {...iconProps} />;
+    case 'refresh': return <RefreshCw {...iconProps} />;
+    default: return <Zap {...iconProps} />;
   }
 };
 

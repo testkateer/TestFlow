@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+  import React, { useState, useEffect } from 'react';
 import { 
   Calendar, 
   Clock, 
@@ -103,10 +103,10 @@ const Dashboard = () => {
     try {
       const testReports = getFromStorage('testReports', []);
       
-      // En son 4 test raporunu al ve tarih sırasına göre sırala
+      // En son 5 test raporunu al ve tarih sırasına göre sırala
       return testReports
         .sort((a, b) => new Date(b.timestamp || b.date) - new Date(a.timestamp || a.date))
-        .slice(0, 4)
+        .slice(0, 5)
         .map(report => ({
           id: report.id,
           name: report.testName,
@@ -126,16 +126,18 @@ const Dashboard = () => {
       
       // Kaydedilmiş testleri planlanmış testler olarak göster
       // (Gerçek zamanlama sistemi olmadığı için mock bir yaklaşım)
-      const scheduleTypes = ['Günlük', 'Haftalık', 'Saatlik'];
+      const scheduleTypes = ['Günlük', 'Haftalık', 'Saatlik', 'Aylık', 'Tekrar'];
       const nextRunTimes = [
         'Bugün 09:00',
         'Pazartesi 18:00', 
         '30 dakika sonra',
         'Yarın 14:00',
-        '2 saat sonra'
+        '2 saat sonra',
+        'Salı 10:30',
+        'Çarşamba 16:00'
       ];
       
-      return savedTests.slice(0, 3).map((test, index) => ({
+      return savedTests.slice(0, 5).map((test, index) => ({
         id: test.id,
         name: test.name,
         nextRun: nextRunTimes[index % nextRunTimes.length],
@@ -157,7 +159,14 @@ const Dashboard = () => {
       if (diffInMinutes < 1) return 'Az önce';
       if (diffInMinutes < 60) return `${diffInMinutes} dakika önce`;
       if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)} saat önce`;
-      return testDate.toLocaleDateString('tr-TR');
+      
+      // Tarih ve saat bilgisini birlikte göster
+      const dateStr = testDate.toLocaleDateString('tr-TR');
+      const timeStr = testDate.toLocaleTimeString('tr-TR', { 
+        hour: '2-digit', 
+        minute: '2-digit' 
+      });
+      return `${dateStr} ${timeStr}`;
     } catch (error) {
       return 'Bilinmeyen';
     }
@@ -228,6 +237,16 @@ const Dashboard = () => {
       case 'running': return <PlayCircle size={16} />;
       default: return <AlertCircle size={16} />;
     }
+  };
+
+  // Test raporuna yönlendirme fonksiyonu
+  const navigateToTestReport = (testId) => {
+    window.location.href = `/report/${testId}`;
+  };
+
+  // Test editörüne yönlendirme fonksiyonu
+  const navigateToTestEditor = (testId) => {
+    window.location.href = `/editor?id=${testId}`;
   };
 
   // Veri yoksa boş durum mesajı göster
@@ -308,7 +327,10 @@ const Dashboard = () => {
           <div className="dashboard-section">
             <div className="card">
               <div className="section-header">
-                <h2>📊 Son Test Çalıştırmaları</h2>
+                <h2>
+                  <BarChart3 size={18} />
+                  Son Test Çalıştırmaları
+                </h2>
                 <button 
                   className="btn btn-secondary"
                   onClick={() => window.location.href = '/reports'}
@@ -320,7 +342,13 @@ const Dashboard = () => {
                 {recentTests.map((test) => (
                   <div key={test.id} className="test-item">
                     <div className="test-info">
-                      <div className="test-name">{test.name}</div>
+                      <div 
+                        className="test-name clickable"
+                        onClick={() => navigateToTestReport(test.id)}
+                        title="Test raporunu görüntüle"
+                      >
+                        {test.name}
+                      </div>
                       <div className="test-timestamp">{test.timestamp}</div>
                     </div>
                     <div className="test-details">
@@ -344,7 +372,10 @@ const Dashboard = () => {
           <div className="dashboard-section">
             <div className="card">
               <div className="section-header">
-                <h2>📆 Kaydedilmiş Test Akışları</h2>
+                <h2>
+                  <Calendar size={18} />
+                  Kaydedilmiş Test Akışları
+                </h2>
                 <button 
                   className="btn btn-secondary"
                   onClick={() => window.location.href = '/scheduling'}
@@ -356,7 +387,13 @@ const Dashboard = () => {
                 {scheduledTests.map((test) => (
                   <div key={test.id} className="scheduled-item">
                     <div className="scheduled-info">
-                      <div className="scheduled-name">{test.name}</div>
+                      <div 
+                        className="scheduled-name clickable"
+                        onClick={() => navigateToTestEditor(test.id)}
+                        title="Test akışını düzenle"
+                      >
+                        {test.name}
+                      </div>
                       <div className="scheduled-frequency">{test.frequency}</div>
                     </div>
                     <div className="scheduled-time">

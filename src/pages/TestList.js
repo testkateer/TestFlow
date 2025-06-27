@@ -2,13 +2,18 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   Search, 
-  Filter, 
+  Settings, 
   Play, 
   Edit, 
   Clock, 
   Download, 
   MoreHorizontal,
-  Trash2
+  Trash2,
+  Copy,
+  Heart,
+  CheckSquare,
+  Square,
+  X
 } from 'lucide-react';
 import { exportTestFlow } from '../utils/testUtils';
 import { runTestWithHandling } from '../utils/testRunner';
@@ -28,6 +33,9 @@ const TestList = () => {
   const [tests, setTests] = useState([]);
   const [openDropdownId, setOpenDropdownId] = useState(null);
   const [runningTests, setRunningTests] = useState(new Set());
+  const [selectedTests, setSelectedTests] = useState(new Set());
+  const [isMultiSelectMode, setIsMultiSelectMode] = useState(false);
+  const [showFavorites, setShowFavorites] = useState(false);
 
   // Kaydedilmiş testleri yükle - storage utility kullan
   useEffect(() => {
@@ -184,13 +192,163 @@ const TestList = () => {
     }
   };
 
+  // Test kopyalama işlevi
+  const copyTest = (test) => {
+    try {
+      // Yeni ID oluştur
+      const newId = Date.now().toString();
+      
+      // Kopyalanan test için yeni isim oluştur
+      const copyName = `${test.name} - Kopya`;
+      
+      // Yeni test objesi oluştur
+      const copiedTest = {
+        ...test,
+        id: newId,
+        name: copyName,
+        status: 'pending', // Yeni kopyalanan test beklemede durumunda
+        lastRun: null, // Son çalıştırma bilgisini sıfırla
+        duration: null, // Süre bilgisini sıfırla
+        createdAt: new Date().toISOString() // Yeni oluşturma tarihi
+      };
+      
+      // Mevcut testlere ekle
+      const updatedTests = [...tests, copiedTest];
+      setTests(updatedTests);
+      setToStorage('savedTestFlows', updatedTests);
+      
+      setOpenDropdownId(null);
+      notify.saveSuccess(`${test.name} kopyalandı`);
+      
+      // Kopyalanan testi düzenleme modunda aç
+      setTimeout(() => {
+        editTest(copiedTest);
+      }, 500);
+      
+    } catch (error) {
+      console.error('Kopyalama hatası:', error);
+      notify.saveError('Test kopyalama');
+    }
+  };
+
+  // Favori test işlemleri
+  const toggleFavorite = (testId) => {
+    const updatedTests = tests.map(test => {
+      if (test.id === testId) {
+        return { ...test, isFavorite: !test.isFavorite };
+      }
+      return test;
+    });
+    
+    setTests(updatedTests);
+    setToStorage('savedTestFlows', updatedTests);
+    
+    const test = tests.find(t => t.id === testId);
+    const action = test.isFavorite ? 'favorilerden çıkarıldı' : 'favorilere eklendi';
+    notify.saveSuccess(`${test.name} ${action}`);
+  };
+
+  // Çoklu seçim işlemleri
+  const toggleTestSelection = (testId) => {
+    const newSelected = new Set(selectedTests);
+    if (newSelected.has(testId)) {
+      newSelected.delete(testId);
+    } else {
+      newSelected.add(testId);
+    }
+    setSelectedTests(newSelected);
+  };
+
+  const selectAllTests = () => {
+    const allTestIds = new Set(filteredTests.map(test => test.id));
+    setSelectedTests(allTestIds);
+  };
+
+  const clearSelection = () => {
+    setSelectedTests(new Set());
+    setIsMultiSelectMode(false);
+  };
+
+  // Toplu işlemler
+  const bulkDelete = async () => {
+    if (selectedTests.size === 0) return;
+    
+    const confirmed = await confirmActions.delete(`${selectedTests.size} test`);
+    if (confirmed) {
+      const updatedTests = tests.filter(test => !selectedTests.has(test.id));
+      setTests(updatedTests);
+      setToStorage('savedTestFlows', updatedTests);
+      notify.deleteSuccess(`${selectedTests.size} test silindi`);
+      clearSelection();
+    }
+  };
+
+  const bulkExport = () => {
+    if (selectedTests.size === 0) return;
+    
+    try {
+      const selectedTestsData = tests.filter(test => selectedTests.has(test.id));
+      
+      selectedTestsData.forEach(test => {
+        const testData = {
+          testName: test.name,
+          steps: test.steps || []
+        };
+        exportTestFlow(testData);
+      });
+      
+      notify.saveSuccess(`${selectedTests.size} test dışarı aktarıldı`);
+      clearSelection();
+    } catch (error) {
+      console.error('Toplu export hatası:', error);
+      notify.saveError('Toplu dışarı aktarma');
+    }
+  };
+
+  const bulkCopy = () => {
+    if (selectedTests.size === 0) return;
+    
+    try {
+      const selectedTestsData = tests.filter(test => selectedTests.has(test.id));
+      const copiedTests = [];
+      
+      selectedTestsData.forEach(test => {
+        const newId = Date.now().toString() + Math.random().toString(36).substr(2, 9);
+        const copyName = `${test.name} - Kopya`;
+        
+        const copiedTest = {
+          ...test,
+          id: newId,
+          name: copyName,
+          status: 'pending',
+          lastRun: null,
+          duration: null,
+          createdAt: new Date().toISOString()
+        };
+        
+        copiedTests.push(copiedTest);
+      });
+      
+      const updatedTests = [...tests, ...copiedTests];
+      setTests(updatedTests);
+      setToStorage('savedTestFlows', updatedTests);
+      
+      notify.saveSuccess(`${selectedTests.size} test kopyalandı`);
+      clearSelection();
+    } catch (error) {
+      console.error('Toplu kopyalama hatası:', error);
+      notify.saveError('Toplu kopyalama');
+    }
+  };
+
   const filteredTests = tests.filter(test => {
     const matchesSearch = test.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          test.description.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = filterStatus === 'all' || test.status === filterStatus;
     const matchesBrowser = filterBrowser === 'all' || test.browser === filterBrowser;
+    const matchesFavorite = !showFavorites || test.isFavorite;
     
-    return matchesSearch && matchesStatus && matchesBrowser;
+    return matchesSearch && matchesStatus && matchesBrowser && matchesFavorite;
   });
 
   return (
@@ -199,6 +357,28 @@ const TestList = () => {
         <div className="header-content">
           <h1>Akışlar</h1>
           <p>Tüm test senaryolarınızı görüntüleyin ve yönetin</p>
+        </div>
+        <div className="header-actions">
+          <button 
+            className={`btn btn-secondary ${showFavorites ? 'active' : ''}`}
+            onClick={() => setShowFavorites(!showFavorites)}
+          >
+            <Heart size={16} />
+            {showFavorites ? 'Tüm Testler' : 'Favoriler'}
+          </button>
+          <button 
+            className={`btn btn-secondary ${isMultiSelectMode ? 'active' : ''}`}
+            onClick={() => {
+              if (isMultiSelectMode) {
+                clearSelection();
+              } else {
+                setIsMultiSelectMode(true);
+              }
+            }}
+          >
+            <CheckSquare size={16} />
+            {isMultiSelectMode ? 'Seçimi İptal' : 'Çoklu Seçim'}
+          </button>
         </div>
       </div>
 
@@ -246,20 +426,93 @@ const TestList = () => {
         </div>
       </div>
 
+      {/* Toplu İşlemler */}
+      {isMultiSelectMode && (
+        <div className="bulk-actions-bar card">
+          <div className="bulk-selection">
+            <span>{selectedTests.size} test seçildi</span>
+            {selectedTests.size < filteredTests.length && (
+              <button 
+                className="btn btn-sm btn-secondary"
+                onClick={selectAllTests}
+              >
+                Tümünü Seç
+              </button>
+            )}
+            <button 
+              className="btn btn-sm btn-secondary"
+              onClick={clearSelection}
+            >
+              <X size={14} />
+              Temizle
+            </button>
+          </div>
+          
+          {selectedTests.size > 0 && (
+            <div className="bulk-actions">
+              <button 
+                className="btn btn-sm btn-secondary"
+                onClick={bulkCopy}
+              >
+                <Copy size={14} />
+                Kopyala ({selectedTests.size})
+              </button>
+              <button 
+                className="btn btn-sm btn-secondary"
+                onClick={bulkExport}
+              >
+                <Download size={14} />
+                Dışarı Aktar ({selectedTests.size})
+              </button>
+              <button 
+                className="btn btn-sm btn-danger"
+                onClick={bulkDelete}
+              >
+                <Trash2 size={14} />
+                Sil ({selectedTests.size})
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Test Listesi */}
       <div className="tests-container">
         <div className="tests-header">
           <span className="results-count">
             {filteredTests.length} test bulundu
+            {showFavorites && ` (${tests.filter(t => t.isFavorite).length} favori)`}
           </span>
         </div>
 
         <div className="tests-grid">
           {filteredTests.map((test) => (
-            <div key={test.id} className="test-card card">
+            <div key={test.id} className={`test-card card ${selectedTests.has(test.id) ? 'selected' : ''}`}>
               <div className="test-card-header">
+                {isMultiSelectMode && (
+                  <div className="test-checkbox">
+                    <button
+                      className="checkbox-btn"
+                      onClick={() => toggleTestSelection(test.id)}
+                    >
+                      {selectedTests.has(test.id) ? 
+                        <CheckSquare size={18} className="checked" /> : 
+                        <Square size={18} />
+                      }
+                    </button>
+                  </div>
+                )}
                 <div className="test-info">
-                  <h3 className="test-name">{test.name}</h3>
+                  <div className="test-name-row">
+                    <h3 className="test-name">{test.name}</h3>
+                    <button
+                      className={`favorite-btn ${test.isFavorite ? 'active' : ''}`}
+                      onClick={() => toggleFavorite(test.id)}
+                      title={test.isFavorite ? 'Favorilerden çıkar' : 'Favorilere ekle'}
+                    >
+                      <Heart size={16} />
+                    </button>
+                  </div>
                   <p className="test-description">{test.description}</p>
                 </div>
                 <div className="test-actions">
@@ -274,6 +527,46 @@ const TestList = () => {
                   </button>
                   {openDropdownId === test.id && (
                     <div className="dropdown-menu">
+                      <button 
+                        className="dropdown-item"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          editTest(test);
+                        }}
+                      >
+                        <Edit size={14} />
+                        Düzenle
+                      </button>
+                      <button 
+                        className="dropdown-item"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          copyTest(test);
+                        }}
+                      >
+                        <Copy size={14} />
+                        Kopyala
+                      </button>
+                      <button 
+                        className="dropdown-item"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleFavorite(test.id);
+                        }}
+                      >
+                        <Heart size={14} />
+                        {test.isFavorite ? 'Favorilerden Çıkar' : 'Favorilere Ekle'}
+                      </button>
+                      <button 
+                        className="dropdown-item"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleExportTest(test);
+                        }}
+                      >
+                        <Download size={14} />
+                        Dışarı Aktar
+                      </button>
                       <button 
                         className="dropdown-item delete-item"
                         onClick={(e) => {
@@ -313,8 +606,18 @@ const TestList = () => {
                     {getStatusText(test.status || 'pending')}
                   </span>
                   <span className={`type-badge ${test.type || 'manual'}`}>
-                    {test.type === 'scheduled' && '⏰ Planlı'}
-                    {(!test.type || test.type === 'manual') && '🔧 Manuel'}
+                    {test.type === 'scheduled' && (
+                      <>
+                        <Clock size={12} />
+                        Planlı
+                      </>
+                    )}
+                    {(!test.type || test.type === 'manual') && (
+                      <>
+                        <Settings size={12} />
+                        Manuel
+                      </>
+                    )}
                   </span>
                 </div>
 
@@ -327,23 +630,9 @@ const TestList = () => {
                     <Play size={14} />
                     {runningTests.has(test.id) ? 'Çalışıyor...' : 'Çalıştır'}
                   </button>
-                  <button 
-                    className="btn btn-secondary btn-sm"
-                    onClick={() => editTest(test)}
-                  >
-                    <Edit size={14} />
-                    Düzenle
-                  </button>
                   <button className="btn btn-secondary btn-sm">
                     <Clock size={14} />
                     Zamanla
-                  </button>
-                  <button 
-                    className="btn btn-secondary btn-sm"
-                    onClick={() => handleExportTest(test)}
-                  >
-                    <Download size={14} />
-                    Export
                   </button>
                 </div>
               </div>

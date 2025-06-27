@@ -415,7 +415,10 @@ const TestEditor = () => {
       <div className="editor-content">
         {/* Sol Panel - Adım Türleri */}
         <div className="steps-panel card">
-          <h3>🧩 Test Adımları</h3>
+          <h3>
+            <Plus size={16} style={{ marginRight: '6px', verticalAlign: 'middle' }} />
+            Test Adımları
+          </h3>
           <div className="step-types">
             {stepTypes.map((stepType) => {
               const Icon = stepType.icon;
@@ -440,7 +443,10 @@ const TestEditor = () => {
         {/* Orta Panel - Akış Görünümü */}
         <div className="flow-panel card">
           <div className="flow-header">
-            <h3>🔄 Test Akışı</h3>
+            <h3>
+              <RefreshCw size={16} style={{ marginRight: '6px', verticalAlign: 'middle' }} />
+              Test Akışı
+            </h3>
             <span className="step-count">{steps.length} adım</span>
           </div>
           
@@ -509,7 +515,10 @@ const TestEditor = () => {
 
         {/* Sağ Panel - Adım Detayları */}
         <div className="config-panel card">
-          <h3>📝 Adım Detayları</h3>
+          <h3>
+            <Edit size={16} style={{ marginRight: '6px', verticalAlign: 'middle' }} />
+            Adım Detayları
+          </h3>
           
           {selectedStep ? (
             <div className="step-config">
@@ -659,7 +668,10 @@ const TestEditor = () => {
 
       {/* Alt Panel - Test Ayarları */}
       <div className="test-settings card">
-        <h3>🧪 Test Ayarları</h3>
+                      <h3>
+                <Settings size={16} style={{ marginRight: '6px', verticalAlign: 'middle' }} />
+                Test Ayarları
+              </h3>
         <div className="settings-grid">
           <div className="setting-group">
             <label>Varsayılan Timeout:</label>

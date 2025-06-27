@@ -14,7 +14,8 @@ import {
   Eye,
   EyeOff,
   Save,
-  RotateCcw
+  RotateCcw,
+  AlertCircle
 } from 'lucide-react';
 import { toast, notify } from '../utils/notificationUtils';
 import { confirmActions } from '../utils/modalUtils';
@@ -122,7 +123,10 @@ const Settings = () => {
           {activeTab === 'profile' && (
             <div className="settings-section card">
               <div className="section-header">
-                <h2>👤 Profil Bilgileri</h2>
+                <h2>
+                  <User size={18} style={{ marginRight: '8px', verticalAlign: 'middle' }} />
+                  Profil Bilgileri
+                </h2>
                 <p>Kişisel bilgilerinizi ve hesap ayarlarınızı düzenleyin</p>
               </div>
 
@@ -181,7 +185,10 @@ const Settings = () => {
               </div>
 
               <div className="appearance-section">
-                <h3>🎨 Görünüm</h3>
+                <h3>
+                  <Monitor size={16} style={{ marginRight: '6px', verticalAlign: 'middle' }} />
+                  Görünüm
+                </h3>
                 <div className="preference-group">
                   <div className="preference-item">
                     <div className="preference-info">
@@ -215,12 +222,18 @@ const Settings = () => {
           {activeTab === 'test' && (
             <div className="settings-section card">
               <div className="section-header">
-                <h2>🧪 Test Ayarları</h2>
+                <h2>
+                  <Monitor size={18} style={{ marginRight: '8px', verticalAlign: 'middle' }} />
+                  Test Ayarları
+                </h2>
                 <p>Varsayılan test yapılandırmaları ve tercihleri</p>
               </div>
 
               <div className="test-defaults">
-                <h3>⚙️ Varsayılan Değerler</h3>
+                <h3>
+                  <Settings size={16} style={{ marginRight: '6px', verticalAlign: 'middle' }} />
+                  Varsayılan Değerler
+                </h3>
                 <div className="preference-group">
                   <div className="preference-item">
                     <div className="preference-info">
@@ -259,7 +272,10 @@ const Settings = () => {
               </div>
 
               <div className="recording-settings">
-                <h3>📹 Kayıt Ayarları</h3>
+                <h3>
+                  <Camera size={16} style={{ marginRight: '6px', verticalAlign: 'middle' }} />
+                  Kayıt Ayarları
+                </h3>
                 <div className="preference-group">
                   <div className="preference-item">
                     <div className="preference-info">
@@ -465,7 +481,10 @@ const Settings = () => {
               </div>
 
               <div className="session-section">
-                <h3>💻 Aktif Oturumlar</h3>
+                <h3>
+                  <Monitor size={16} style={{ marginRight: '6px', verticalAlign: 'middle' }} />
+                  Aktif Oturumlar
+                </h3>
                 <div className="session-list">
                   <div className="session-item current">
                     <div className="session-info">
@@ -545,7 +564,10 @@ const Settings = () => {
               </div>
 
               <div className="restore-section">
-                <h3>⬆️ Geri Yükleme</h3>
+                <h3>
+                  <Upload size={16} style={{ marginRight: '6px', verticalAlign: 'middle' }} />
+                  Geri Yükleme
+                </h3>
                 <div className="restore-area">
                   <div className="upload-area">
                     <Upload size={48} />
@@ -557,7 +579,10 @@ const Settings = () => {
               </div>
 
               <div className="danger-section">
-                <h3>⚠️ Tehlikeli Bölge</h3>
+                <h3>
+                  <AlertCircle size={16} style={{ marginRight: '6px', verticalAlign: 'middle' }} />
+                  Tehlikeli Bölge
+                </h3>
                 <div className="danger-actions">
                   <div className="danger-item">
                     <div className="danger-info">

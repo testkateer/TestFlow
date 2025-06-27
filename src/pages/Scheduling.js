@@ -7,7 +7,9 @@ import {
   Trash2, 
   Bell,
   ToggleLeft,
-  ToggleRight
+  ToggleRight,
+  Plus,
+  BarChart3
 } from 'lucide-react';
 import '../styles/main.css';
 
@@ -91,19 +93,22 @@ const Scheduling = () => {
           className={`tab-btn ${activeTab === 'scheduled' ? 'active' : ''}`}
           onClick={() => setActiveTab('scheduled')}
         >
-          📅 Planlı Testler
+          <Calendar size={16} style={{ marginRight: '6px', verticalAlign: 'middle' }} />
+          Planlı Testler
         </button>
         <button 
           className={`tab-btn ${activeTab === 'create' ? 'active' : ''}`}
           onClick={() => setActiveTab('create')}
         >
-          ➕ Yeni Zamanlama
+          <Plus size={16} style={{ marginRight: '6px', verticalAlign: 'middle' }} />
+          Yeni Zamanlama
         </button>
         <button 
           className={`tab-btn ${activeTab === 'history' ? 'active' : ''}`}
           onClick={() => setActiveTab('history')}
         >
-          📊 Çalıştırma Geçmişi
+          <BarChart3 size={16} style={{ marginRight: '6px', verticalAlign: 'middle' }} />
+          Çalıştırma Geçmişi
         </button>
       </div>
 
@@ -206,7 +211,10 @@ const Scheduling = () => {
       {activeTab === 'create' && (
         <div className="create-schedule">
           <div className="schedule-form card">
-            <h3>🕒 Yeni Zamanlama Oluştur</h3>
+            <h3>
+              <Clock size={16} style={{ marginRight: '6px', verticalAlign: 'middle' }} />
+              Yeni Zamanlama Oluştur
+            </h3>
             
             <div className="form-section">
               <h4>Test Seçimi</h4>
@@ -349,7 +357,10 @@ const Scheduling = () => {
           </div>
 
           <div className="history-table card">
-            <h3>📊 Çalıştırma Geçmişi</h3>
+            <h3>
+              <BarChart3 size={16} style={{ marginRight: '6px', verticalAlign: 'middle' }} />
+              Çalıştırma Geçmişi
+            </h3>
             <div className="table-container">
               <table>
                 <thead>

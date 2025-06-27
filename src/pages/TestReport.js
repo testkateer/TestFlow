@@ -13,7 +13,10 @@ import {
   Monitor,
   ExternalLink,
   Play,
-  Edit
+  Edit,
+  BarChart3,
+  RefreshCw,
+  ClipboardList
 } from 'lucide-react';
 import { downloadTestReport, saveTestReportToStorage } from '../utils/reportUtils';
 import { runTestWithHandling } from '../utils/testRunner';
@@ -161,11 +164,11 @@ const TestReport = () => {
 
   const getStepTypeIcon = (type) => {
     switch (type) {
-      case 'navigation': return '🌐';
-      case 'click': return '👆';
-      case 'input': return '⌨️';
-      case 'verify': return '👁️';
-      default: return '⚡';
+      case 'navigation': return <Monitor size={14} />;
+      case 'click': return <ExternalLink size={14} />;
+      case 'input': return <Edit size={14} />;
+      case 'verify': return <CheckCircle size={14} />;
+      default: return <AlertCircle size={14} />;
     }
   };
 
@@ -438,19 +441,22 @@ const TestReport = () => {
           className={`tab-btn ${activeTab === 'overview' ? 'active' : ''}`}
           onClick={() => setActiveTab('overview')}
         >
-          📋 Genel Bakış
+                      <ClipboardList size={16} style={{ marginRight: '6px', verticalAlign: 'middle' }} />
+            Genel Bakış
         </button>
         <button
           className={`tab-btn ${activeTab === 'steps' ? 'active' : ''}`}
           onClick={() => setActiveTab('steps')}
         >
-          🔄 Adım Detayları
+                      <RefreshCw size={16} style={{ marginRight: '6px', verticalAlign: 'middle' }} />
+            Adım Detayları
         </button>
         <button
           className={`tab-btn ${activeTab === 'history' ? 'active' : ''}`}
           onClick={() => setActiveTab('history')}
         >
-          📊 Çalıştırma Geçmişi
+                      <BarChart3 size={16} style={{ marginRight: '6px', verticalAlign: 'middle' }} />
+            Çalıştırma Geçmişi
         </button>
         <button
           className={`tab-btn ${activeTab === 'media' ? 'active' : ''}`}
@@ -465,7 +471,10 @@ const TestReport = () => {
         <div className="overview-content">
           <div className="overview-grid">
             <div className="summary-card card">
-              <h3>📊 Test Özeti</h3>
+              <h3>
+                <BarChart3 size={16} style={{ marginRight: '6px', verticalAlign: 'middle' }} />
+                Test Özeti
+              </h3>
               <div className="summary-stats">
                 <div className="summary-row">
                   <span>Toplam Adım:</span>
@@ -561,7 +570,10 @@ const TestReport = () => {
       {activeTab === 'steps' && (
         <div className="steps-content">
           <div className="steps-list card">
-            <h3>🔄 Adım Detayları</h3>
+                          <h3>
+                <RefreshCw size={16} style={{ marginRight: '6px', verticalAlign: 'middle' }} />
+                Adım Detayları
+              </h3>
             <div className="steps-container">
               {stepDetails.map((step, index) => (
                 <div key={step.id} className={`step-item ${step.status}`}>
@@ -605,7 +617,10 @@ const TestReport = () => {
       {activeTab === 'history' && (
         <div className="history-content">
           <div className="history-table card">
-            <h3>📊 Çalıştırma Geçmişi</h3>
+                          <h3>
+                <BarChart3 size={16} style={{ marginRight: '6px', verticalAlign: 'middle' }} />
+                Çalıştırma Geçmişi
+              </h3>
             <div className="table-container">
               <table>
                 <thead>
@@ -665,7 +680,10 @@ const TestReport = () => {
             </div>
 
             <div className="video-section card">
-              <h3>📹 Video Kaydı</h3>
+              <h3>
+                <Video size={16} style={{ marginRight: '6px', verticalAlign: 'middle' }} />
+                Video Kaydı
+              </h3>
               <div className="video-placeholder">
                 <Video size={64} />
                 <h4>Test Çalıştırma Videosu</h4>
