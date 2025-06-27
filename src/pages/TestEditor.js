@@ -16,8 +16,11 @@ import {
   Trash2,
   Edit,
   AlertCircle,
-  X
+  X,
+  Undo,
+  Redo
 } from 'lucide-react';
+import useHistory from '../hooks/useHistory';
 import { exportTestFlow, importTestFlow } from '../utils/testUtils';
 import { runTestWithHandling } from '../utils/testRunner';
 import { getFromStorage, setToStorage, setTempData } from '../utils/storageUtils';
@@ -31,19 +34,31 @@ import { useModal } from '../contexts/ModalContext';
 
 const TestEditor = () => {
   const location = useLocation();
-  const [testName, setTestName] = useState('Yeni Test Senaryosu');
+  const navigate = useNavigate();
+  
+  const {
+    state: editorState,
+    setState: setEditorState,
+    resetState: resetEditorState,
+    undo,
+    redo,
+    canUndo,
+    canRedo
+  } = useHistory({ testName: 'Yeni Test Senaryosu', steps: [] });
+
+  const { testName, steps } = editorState;
+
   const [selectedStep, setSelectedStep] = useState(null);
-  const [steps, setSteps] = useState([]);
   const [isRunning, setIsRunning] = useState(false);
   const [testResults, setTestResults] = useState(null);
-  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-  const [originalData, setOriginalData] = useState({ testName: 'Yeni Test Senaryosu', steps: [] });
   const { showError } = useNotification();
   const { showTripleConfirm } = useModal();
   const saveTestFlowRef = useRef();
 
+  const hasUnsavedChanges = canUndo;
+
   const stepTypes = [
-    { id: 'navigate', name: 'Git', icon: Navigation, description: 'Belirtilen URL\'ye git' },
+    { id: 'navigate', name: 'Git', icon: Navigation, description: 'Belirtilen URL ye git' },
     { id: 'click', name: 'Tıkla', icon: MousePointer, description: 'Element üzerine tıkla' },
     { id: 'input', name: 'Metin Gir', icon: Type, description: 'Alana metin gir' },
     { id: 'wait', name: 'Bekle', icon: Clock, description: 'Belirtilen süre bekle' },
@@ -51,87 +66,44 @@ const TestEditor = () => {
     { id: 'refresh', name: 'Yenile', icon: RefreshCw, description: 'Sayfayı yenile' }
   ];
 
-  // Test adı ve steps değiştiğinde unsaved changes durumunu kontrol et
-  useEffect(() => {
-    const hasChanges = 
-      testName !== originalData.testName || 
-      JSON.stringify(steps) !== JSON.stringify(originalData.steps);
-    setHasUnsavedChanges(hasChanges);
-  }, [testName, steps, originalData]);
-
-  // Sayfa yüklendiğinde rerun parametresi ve düzenleme modu kontrolü
   useEffect(() => {
     const urlParams = new URLSearchParams(location.search);
     const isRerun = urlParams.get('rerun');
     const editTestId = urlParams.get('edit');
     
+    const loadData = (data, nameKey, stepsKey) => {
+      const stepsWithIcons = (data[stepsKey] || []).map(step => {
+        const stepType = stepTypes.find(type => type.id === step.type);
+        return { ...step, icon: stepType ? stepType.icon : AlertCircle };
+      });
+      resetEditorState({ testName: data[nameKey] || 'Yeni Test Senaryosu', steps: stepsWithIcons });
+    };
+
     if (isRerun === 'true') {
       try {
-        // localStorage'dan rerun test verisini al
-        const rerunTestData = JSON.parse(localStorage.getItem('tempTestRerun') || '{}');
-        if (rerunTestData.testName && rerunTestData.steps) {
-          // Icon'ları doğru şekilde map et
-          const stepsWithIcons = rerunTestData.steps.map(step => {
-            const stepType = stepTypes.find(type => type.id === step.type);
-            return {
-              ...step,
-              icon: stepType ? stepType.icon : AlertCircle
-            };
-          });
-          
-          setTestName(rerunTestData.testName);
-          setSteps(stepsWithIcons);
-          setOriginalData({ testName: rerunTestData.testName, steps: stepsWithIcons });
-          
-          // Geçici veriyi temizle
+        const rerunTestData = getFromStorage('tempTestRerun');
+        if (rerunTestData) {
+          loadData(rerunTestData, 'testName', 'steps');
           localStorage.removeItem('tempTestRerun');
-          localStorage.removeItem('temp_testRerun');
-          
-          // URL'den rerun parametresini temizle
-          const newUrl = window.location.pathname;
-          window.history.replaceState({}, '', newUrl);
-          
-          console.log('Test tekrar çalıştırma için yüklendi:', rerunTestData.testName);
+          navigate('/editor', { replace: true });
         }
       } catch (error) {
-        console.error('Test tekrar yükleme hatası:', error);
         showError('Test tekrar yüklenirken bir hata oluştu.');
       }
     } else if (editTestId) {
       try {
-        // Düzenleme modunda test verilerini yükle - storageUtils kullan
         const editingTestData = getFromStorage('temp_editingTest');
         if (editingTestData) {
-          // Icon'ları doğru şekilde map et
-          const stepsWithIcons = (editingTestData.steps || []).map(step => {
-            const stepType = stepTypes.find(type => type.id === step.type);
-            return {
-              ...step,
-              icon: stepType ? stepType.icon : AlertCircle
-            };
-          });
-          
-          setTestName(editingTestData.name || 'Yeni Test Senaryosu');
-          setSteps(stepsWithIcons);
-          setOriginalData({ testName: editingTestData.name || 'Yeni Test Senaryosu', steps: stepsWithIcons });
-          
-          // Geçici veriyi temizle
+          loadData(editingTestData, 'name', 'steps');
           localStorage.removeItem('temp_editingTest');
-          
-          // URL'den edit parametresini temizle
-          const newUrl = window.location.pathname;
-          window.history.replaceState({}, '', newUrl);
-          
-          console.log('Test düzenleme için yüklendi:', editingTestData.name);
+          navigate('/editor', { replace: true });
         }
       } catch (error) {
-        console.error('Test düzenleme yükleme hatası:', error);
         showError('Test düzenlenirken bir hata oluştu.');
       }
     }
-  }, [location.search, stepTypes, showError]);
+  }, [location.search, navigate, showError, resetEditorState, stepTypes]);
 
-  // Sayfa kapatma/yenileme durumunda uyarı
   useEffect(() => {
     const handleBeforeUnload = (event) => {
       if (hasUnsavedChanges) {
@@ -145,9 +117,7 @@ const TestEditor = () => {
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, [hasUnsavedChanges]);
 
-  // Sayfa değişim kontrolü için global fonksiyon ekle
   useEffect(() => {
-    // Global window objesine TestEditor'ın unsaved changes kontrolünü ekle
     window.checkTestEditorUnsavedChanges = async () => {
       if (hasUnsavedChanges) {
         const result = await showTripleConfirm({
@@ -159,25 +129,25 @@ const TestEditor = () => {
         });
         
         if (result === 'save') {
-          // Kaydet ve çık
           await saveTestFlowRef.current();
           return true;
         } else if (result === 'exit') {
-          // Kaydetmeden çık
           return true;
         } else {
-          // İptal
           return false;
         }
       }
       return true;
     };
 
-    // Cleanup - component unmount olduğunda global fonksiyonu temizle
     return () => {
       delete window.checkTestEditorUnsavedChanges;
     };
   }, [hasUnsavedChanges, showTripleConfirm]);
+
+  const setTestNameState = (name) => {
+    setEditorState(currentState => ({ ...currentState, testName: name }));
+  };
 
   const addStep = (stepType) => {
     const newStep = {
@@ -187,81 +157,53 @@ const TestEditor = () => {
       icon: stepType.icon,
       config: getDefaultConfig(stepType.id)
     };
-    setSteps([...steps, newStep]);
+    setEditorState(s => ({ ...s, steps: [...s.steps, newStep] }));
   };
 
   const getDefaultConfig = (type) => {
     switch (type) {
-      case 'navigate':
-        return { url: '' };
-      case 'click':
-        return { selector: '#button', description: 'Button element' };
-      case 'input':
-        return { selector: '#input', text: 'Sample text', description: 'Input field' };
-      case 'wait':
-        return { duration: 2000, description: '2 saniye bekle' };
-      case 'verify':
-        return { selector: '#element', description: 'Element visibility check' };
-      case 'refresh':
-        return { description: 'Sayfa yenileme' };
-      default:
-        return {};
+      case 'navigate': return { url: '' };
+      case 'click': return { selector: '#button', description: 'Button element' };
+      case 'input': return { selector: '#input', text: 'Sample text', description: 'Input field' };
+      case 'wait': return { duration: 2000, description: '2 saniye bekle' };
+      case 'verify': return { selector: '#element', description: 'Element visibility check' };
+      case 'refresh': return { description: 'Sayfa yenileme' };
+      default: return {};
     }
   };
 
   const removeStep = (stepId) => {
-    setSteps(steps.filter(step => step.id !== stepId));
+    setEditorState(s => ({ ...s, steps: s.steps.filter(step => step.id !== stepId) }));
     if (selectedStep?.id === stepId) {
       setSelectedStep(null);
     }
   };
 
   const updateStepConfig = (stepId, newConfig) => {
-    setSteps(steps.map(step => 
-      step.id === stepId ? { ...step, config: { ...step.config, ...newConfig } } : step
-    ));
+    setEditorState(s => ({
+      ...s,
+      steps: s.steps.map(step => 
+        step.id === stepId ? { ...step, config: { ...step.config, ...newConfig } } : step
+      )
+    }));
     
-    // Eğer güncelenen adım seçili adım ise, selectedStep'i de güncelle
     if (selectedStep && selectedStep.id === stepId) {
-      setSelectedStep(prev => ({
-        ...prev,
-        config: { ...prev.config, ...newConfig }
-      }));
+      setSelectedStep(prev => ({ ...prev, config: { ...prev.config, ...newConfig } }));
     }
-    
-    // hasUnsavedChanges artık otomatik olarak useEffect'te hesaplanıyor
   };
 
-  // Test raporu kaydetme - ortak utility kullan
   const saveTestReport = (testResult) => {
     const testData = { testName, steps };
     saveTestReportToStorage(testResult, testData);
   };
 
-  // calculateTestDuration artık reportUtils'de, yerel fonksiyonu kaldır
-
-  // Test çalıştırma işlevi - ortak utility kullan
   const runTest = async () => {
     const testData = { testName, steps };
-    
     await runTestWithHandling(testData, {
       onStart: () => {
         setIsRunning(true);
         setTestResults(null);
-        
-        // Test verilerini geçici olarak kaydet (tekrar çalıştırma için)
-        setTempData('testRerun', {
-          testName,
-          steps: steps.map(step => ({
-            type: step.type,
-            action: step.action,
-            selector: step.selector,
-            value: step.value,
-            wait: step.wait,
-            assertion: step.assertion
-          }))
-        });
-        
+        setTempData('testRerun', { testName, steps });
         toast.info(`${testName} testi başlatılıyor...`);
       },
       onSuccess: (result) => {
@@ -274,41 +216,28 @@ const TestEditor = () => {
         saveTestReport(result);
         toast.error(`${testName} testi başarısız oldu!`);
       },
-      onFinally: () => {
-        setIsRunning(false);
-      }
+      onFinally: () => setIsRunning(false)
     });
   };
 
-
-
   const handleExportTestFlow = () => {
     try {
-      const testData = {
-        testName,
-        steps
-      };
-      exportTestFlow(testData);
+      exportTestFlow({ testName, steps });
       notify.saveSuccess(`${testName} dışa aktarıldı`);
     } catch (error) {
-      console.error('Export hatası:', error);
       notify.saveError('Test dışa aktarma');
     }
   };
 
   const handleImportTestFlow = () => {
     importTestFlow(stepTypes, (importedData) => {
-      setTestName(importedData.testName);
-      setSteps(importedData.steps);
+      resetEditorState({ testName: importedData.testName, steps: importedData.steps });
       setSelectedStep(null);
-      // Import sonrası originalData güncelle (unsaved changes olarak işaretle)
-      setOriginalData({ testName: 'Yeni Test Senaryosu', steps: [] });
       notify.saveSuccess('Test akışı içe aktarıldı');
     });
   };
 
   const saveTestFlow = useCallback(async () => {
-    // Validation
     const validationResult = validateTestFlow({ testName, steps });
     if (!validationResult.isValid) {
       toast.error(`Validation Hatası: ${validationResult.errors.join(', ')}`);
@@ -316,10 +245,7 @@ const TestEditor = () => {
     }
 
     try {
-      // Mevcut kaydedilmiş testleri al - storage utility kullan
       const savedTests = getFromStorage('savedTestFlows', []);
-      
-      // Yeni test verisi oluştur
       const newTest = {
         id: Date.now(),
         name: testName,
@@ -333,42 +259,29 @@ const TestEditor = () => {
         type: 'manual'
       };
 
-      // Aynı isimde test var mı kontrol et
       const existingTestIndex = savedTests.findIndex(test => test.name === testName);
       
       if (existingTestIndex !== -1) {
-        // Varolan testi güncelle
         const shouldUpdate = await confirmActions.save(`"${testName}" adında bir test zaten mevcut. Güncellemek ister misiniz?`);
         if (shouldUpdate) {
-          savedTests[existingTestIndex] = {
-            ...savedTests[existingTestIndex],
-            ...newTest,
-            id: savedTests[existingTestIndex].id, // Orijinal ID'yi koru
-            updatedAt: new Date().toISOString()
-          };
+          savedTests[existingTestIndex] = { ...savedTests[existingTestIndex], ...newTest, id: savedTests[existingTestIndex].id, updatedAt: new Date().toISOString() };
           notify.updateSuccess(testName);
         } else {
           return;
         }
       } else {
-        // Yeni test ekle
         savedTests.push(newTest);
         notify.saveSuccess(testName);
       }
 
-      // localStorage'a kaydet - storage utility kullan
       setToStorage('savedTestFlows', savedTests);
-      
-      // Kaydetme başarılı olduğunda original data'yı güncelle
-      setOriginalData({ testName, steps });
+      resetEditorState({ testName, steps });
       
     } catch (error) {
-      console.error('Kaydetme hatası:', error);
       notify.saveError(testName);
     }
-  }, [testName, steps, setOriginalData]);
+  }, [testName, steps, resetEditorState]);
 
-  // saveTestFlow fonksiyonunu ref'e ata
   saveTestFlowRef.current = saveTestFlow;
 
   return (
@@ -380,16 +293,14 @@ const TestEditor = () => {
             <input 
               type="text" 
               value={testName} 
-              onChange={(e) => {
-                setTestName(e.target.value);
-              }}
+              onChange={(e) => setTestNameState(e.target.value)}
               className="test-name-input"
               placeholder="Test adı girin..."
             />
             {testName !== '' && (
               <button 
                 className="test-name-clear-btn" 
-                onClick={() => setTestName('')}
+                onClick={() => setTestNameState('')}
                 title="Test adını temizle"
               >
                 <X size={16} />
@@ -398,6 +309,14 @@ const TestEditor = () => {
           </div>
         </div>
         <div className="header-actions">
+          <button className="btn btn-secondary" onClick={undo} disabled={!canUndo} title="Geri Al">
+            <Undo size={16} />
+            Geri Al
+          </button>
+          <button className="btn btn-secondary" onClick={redo} disabled={!canRedo} title="İleri Al">
+            <Redo size={16} />
+            İleri Al
+          </button>
           <button className="btn btn-secondary" onClick={handleImportTestFlow}>
             <Upload size={16} />
             İçe Aktar
@@ -406,7 +325,7 @@ const TestEditor = () => {
             <Download size={16} />
             Dışa Aktar
           </button>
-          <button className="btn btn-primary" onClick={saveTestFlow}>
+          <button className="btn btn-primary" onClick={saveTestFlow} disabled={!hasUnsavedChanges}>
             <Save size={16} />
             Kaydet
           </button>
@@ -416,7 +335,7 @@ const TestEditor = () => {
             disabled={isRunning}
           >
             <Play size={16} />
-            {isRunning ? 'Test Çalışıyor...' : 'Testi Çalıştır'}
+            {isRunning ? 'Çalışıyor...' : 'Çalıştır'}
           </button>
         </div>
       </div>
@@ -673,7 +592,6 @@ const TestEditor = () => {
             </div>
           )}
         </div>
-      </div>
 
       {/* Alt Panel - Test Ayarları */}
       <div className="test-settings card">
@@ -714,6 +632,7 @@ const TestEditor = () => {
               <option>Sadece Hata Durumunda</option>
             </select>
           </div>
+        </div>
         </div>
       </div>
     </div>
