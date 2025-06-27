@@ -15,7 +15,8 @@ import {
   Plus,
   Trash2,
   Edit,
-  AlertCircle
+  AlertCircle,
+  X
 } from 'lucide-react';
 import { exportTestFlow, importTestFlow } from '../utils/testUtils';
 import { runTestWithHandling } from '../utils/testRunner';
@@ -29,7 +30,6 @@ import { useNotification } from '../contexts/NotificationContext';
 import { useModal } from '../contexts/ModalContext';
 
 const TestEditor = () => {
-  const navigate = useNavigate();
   const location = useLocation();
   const [testName, setTestName] = useState('Yeni Test Senaryosu');
   const [selectedStep, setSelectedStep] = useState(null);
@@ -386,6 +386,15 @@ const TestEditor = () => {
               className="test-name-input"
               placeholder="Test adı girin..."
             />
+            {testName !== '' && (
+              <button 
+                className="test-name-clear-btn" 
+                onClick={() => setTestName('')}
+                title="Test adını temizle"
+              >
+                <X size={16} />
+              </button>
+            )}
           </div>
         </div>
         <div className="header-actions">

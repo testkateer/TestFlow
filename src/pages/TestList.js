@@ -17,9 +17,9 @@ import {
 } from 'lucide-react';
 import { exportTestFlow } from '../utils/testUtils';
 import { runTestWithHandling } from '../utils/testRunner';
-import { getFromStorage, setToStorage, getTempData, setTempData } from '../utils/storageUtils';
-import { getStatusIcon, getStatusText, getBrowserIcon } from '../utils/statusUtils';
-import { formatDateTime, formatDate, formatTime } from '../utils/dateUtils';
+import { getFromStorage, setToStorage,  setTempData } from '../utils/storageUtils';
+import { getStatusText, getBrowserIcon } from '../utils/statusUtils';
+import { formatDateTime} from '../utils/dateUtils';
 import { saveTestReportToStorage, calculateTestDuration } from '../utils/reportUtils';
 import { toast, notify } from '../utils/notificationUtils';
 import { confirmActions } from '../utils/modalUtils';
@@ -392,6 +392,15 @@ const TestList = () => {
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
+          {searchTerm && (
+            <button 
+              className="search-clear-btn" 
+              onClick={() => setSearchTerm('')}
+              title="Aramayı temizle"
+            >
+              <X size={16} />
+            </button>
+          )}
         </div>
         
         <div className="filters">

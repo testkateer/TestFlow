@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
-  Search, 
-  Filter, 
+  Search,
   Calendar, 
   Clock, 
   CheckCircle, 
@@ -10,7 +9,8 @@ import {
   AlertCircle,
   Eye,
   Download,
-  BarChart3
+  BarChart3,
+  X
 } from 'lucide-react';
 import { downloadTestReport } from '../utils/reportUtils';
 import { getFromStorage } from '../utils/storageUtils';
@@ -139,6 +139,15 @@ const Reports = () => {
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
+          {searchTerm && (
+            <button 
+              className="search-clear-btn" 
+              onClick={() => setSearchTerm('')}
+              title="Aramayı temizle"
+            >
+              <X size={16} />
+            </button>
+          )}
         </div>
         
         <div className="filters">

@@ -10,9 +10,8 @@ import {
   BarChart3,
   Percent
 } from 'lucide-react';
-import { getFromStorage, setToStorage } from '../utils/storageUtils';
+import { getFromStorage} from '../utils/storageUtils';
 import { clearExpiredRunningTests } from '../utils/testRunner';
-import { formatRelativeTime } from '../utils/dateUtils';
 import '../styles/main.css';
 
 const Dashboard = () => {
