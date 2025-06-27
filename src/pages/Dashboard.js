@@ -236,7 +236,7 @@ const Dashboard = () => {
   if (isLoading) {
     return (
       <div className="dashboard">
-        <div className="dashboard-header">
+        <div className="page-header">
           <h1>Dashboard</h1>
           <p>Test otomasyonu platform genel durumu</p>
         </div>
@@ -251,7 +251,7 @@ const Dashboard = () => {
   if (error) {
     return (
       <div className="dashboard">
-        <div className="dashboard-header">
+        <div className="page-header">
           <h1>Dashboard</h1>
           <p>Test otomasyonu platform genel durumu</p>
         </div>
@@ -265,7 +265,7 @@ const Dashboard = () => {
 
   return (
     <div className="dashboard">
-      <div className="dashboard-header">
+      <div className="page-header">
         <div>
           <h1>Dashboard</h1>
           <p>Test otomasyonu platform genel durumu</p>
