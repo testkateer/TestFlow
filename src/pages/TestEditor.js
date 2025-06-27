@@ -593,47 +593,7 @@ const TestEditor = () => {
           )}
         </div>
 
-      {/* Alt Panel - Test Ayarları */}
-      <div className="test-settings card">
-                      <h3>
-                <Settings size={16} style={{ marginRight: '6px', verticalAlign: 'middle' }} />
-                Test Ayarları
-              </h3>
-        <div className="settings-grid">
-          <div className="setting-group">
-            <label>Varsayılan Timeout:</label>
-            <select>
-              <option>30 saniye</option>
-              <option>60 saniye</option>
-              <option>120 saniye</option>
-            </select>
-          </div>
-          <div className="setting-group">
-            <label>Tarayıcı:</label>
-            <select>
-              <option>Chrome</option>
-              <option>Firefox</option>
-              <option>Safari</option>
-            </select>
-          </div>
-          <div className="setting-group">
-            <label>Ekran Çözünürlüğü:</label>
-            <select>
-              <option>1920x1080</option>
-              <option>1366x768</option>
-              <option>Mobile (375x667)</option>
-            </select>
-          </div>
-          <div className="setting-group">
-            <label>Ekran Kaydı:</label>
-            <select>
-              <option>Açık</option>
-              <option>Kapalı</option>
-              <option>Sadece Hata Durumunda</option>
-            </select>
-          </div>
-        </div>
-        </div>
+      
       </div>
     </div>
   );
