@@ -18,7 +18,7 @@ import { formatDateTime, formatDate, formatTime } from '../utils/dateUtils';
 import { saveTestReportToStorage, calculateTestDuration } from '../utils/reportUtils';
 import { toast, notify } from '../utils/notificationUtils';
 import { confirmActions } from '../utils/modalUtils';
-import '../styles/TestList.css';
+import '../styles/main.css';
 
 const TestList = () => {
   const navigate = useNavigate();

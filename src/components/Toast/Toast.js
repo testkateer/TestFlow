@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { X, CheckCircle, AlertCircle, AlertTriangle, Info } from 'lucide-react';
-import './Toast.css';
+import '../../styles/main.css';
 
 const TOAST_ICONS = {
   success: CheckCircle,

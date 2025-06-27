@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { X } from 'lucide-react';
 import { createPortal } from 'react-dom';
-import './Modal.css';
+import '../../styles/main.css';
 
 const Modal = ({ modal, onClose }) => {
   const [isVisible, setIsVisible] = useState(false);

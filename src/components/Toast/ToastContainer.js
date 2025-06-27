@@ -2,7 +2,7 @@ import React from 'react';
 import { createPortal } from 'react-dom';
 import { useNotification } from '../../contexts/NotificationContext';
 import Toast from './Toast';
-import './ToastContainer.css';
+import '../../styles/main.css';
 
 const ToastContainer = () => {
   const { toasts, removeToast } = useNotification();

@@ -9,7 +9,7 @@ import {
   ToggleLeft,
   ToggleRight
 } from 'lucide-react';
-import '../styles/Scheduling.css';
+import '../styles/main.css';
 
 const Scheduling = () => {
   const [activeTab, setActiveTab] = useState('scheduled');

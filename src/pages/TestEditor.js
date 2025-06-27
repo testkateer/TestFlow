@@ -24,7 +24,7 @@ import { validateTestFlow } from '../utils/validationUtils';
 import { saveTestReportToStorage } from '../utils/reportUtils';
 import { toast, notify } from '../utils/notificationUtils';
 import { confirmActions } from '../utils/modalUtils';
-import '../styles/TestEditor.css';
+import '../styles/main.css';
 import { useNotification } from '../contexts/NotificationContext';
 import { useModal } from '../contexts/ModalContext';
 

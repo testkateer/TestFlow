@@ -13,7 +13,7 @@ import {
 import { getFromStorage, setToStorage } from '../utils/storageUtils';
 import { clearExpiredRunningTests } from '../utils/testRunner';
 import { formatRelativeTime } from '../utils/dateUtils';
-import '../styles/Dashboard.css';
+import '../styles/main.css';
 
 const Dashboard = () => {
   // State tanımlamaları

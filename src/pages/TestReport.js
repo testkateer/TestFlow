@@ -20,7 +20,7 @@ import { runTestWithHandling } from '../utils/testRunner';
 import { setTempData } from '../utils/storageUtils';
 import { toast } from '../utils/notificationUtils';
 import { useNotification } from '../contexts/NotificationContext';
-import '../styles/TestReport.css';
+import '../styles/main.css';
 
 const TestReport = () => {
   const { id } = useParams();

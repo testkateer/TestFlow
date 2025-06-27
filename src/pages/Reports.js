@@ -15,7 +15,7 @@ import {
 import { downloadTestReport } from '../utils/reportUtils';
 import { getFromStorage } from '../utils/storageUtils';
 import { isToday, isThisWeek } from '../utils/dateUtils';
-import '../styles/Reports.css';
+import '../styles/main.css';
 
 const Reports = () => {
   const navigate = useNavigate();

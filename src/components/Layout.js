@@ -9,7 +9,8 @@ import {
   Plus,
   TestTube2
 } from 'lucide-react';
-import './Layout.css';
+import ThemeToggle from './ThemeToggle';
+import '../styles/main.css';
 
 const Layout = ({ children }) => {
   const location = useLocation();
@@ -47,6 +48,7 @@ const Layout = ({ children }) => {
             <TestTube2 size={32} className="logo-icon" />
             <span className="logo-text">TestFlow</span>
           </div>
+          <ThemeToggle />
         </div>
         
         <div className="nav-menu">

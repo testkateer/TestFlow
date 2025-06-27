@@ -11,8 +11,6 @@ import {
   Upload,
   Key,
   Mail,
-  Moon,
-  Sun,
   Eye,
   EyeOff,
   Save,
@@ -20,11 +18,10 @@ import {
 } from 'lucide-react';
 import { toast, notify } from '../utils/notificationUtils';
 import { confirmActions } from '../utils/modalUtils';
-import '../styles/Settings.css';
+import '../styles/main.css';
 
 const Settings = () => {
   const [activeTab, setActiveTab] = useState('profile');
-  const [isDarkMode, setIsDarkMode] = useState(false);
   const [showApiKey, setShowApiKey] = useState(false);
 
   // Settings kaydetme fonksiyonu
@@ -32,7 +29,6 @@ const Settings = () => {
     try {
       // Burada normalde API'ye post edilir, şimdilik localStorage'a kaydedelim
       const settings = {
-        darkMode: isDarkMode,
         // Diğer ayarlar...
       };
       localStorage.setItem('userSettings', JSON.stringify(settings));
@@ -46,7 +42,6 @@ const Settings = () => {
   const handleResetSettings = async () => {
     const confirmed = await confirmActions.reset('tüm ayarları');
     if (confirmed) {
-      setIsDarkMode(false);
       setShowApiKey(false);
       localStorage.removeItem('userSettings');
       notify.saveSuccess('Ayarlar sıfırlandı');
@@ -188,21 +183,6 @@ const Settings = () => {
               <div className="appearance-section">
                 <h3>🎨 Görünüm</h3>
                 <div className="preference-group">
-                  <div className="preference-item">
-                    <div className="preference-info">
-                      <span className="preference-label">Karanlık Mod</span>
-                      <span className="preference-desc">Arayüzü karanlık temada kullanın</span>
-                    </div>
-                    <button 
-                      className={`toggle-switch ${isDarkMode ? 'active' : ''}`}
-                      onClick={() => setIsDarkMode(!isDarkMode)}
-                    >
-                      <div className="toggle-thumb">
-                        {isDarkMode ? <Moon size={12} /> : <Sun size={12} />}
-                      </div>
-                    </button>
-                  </div>
-
                   <div className="preference-item">
                     <div className="preference-info">
                       <span className="preference-label">Dil</span>
