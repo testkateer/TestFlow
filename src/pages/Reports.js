@@ -23,6 +23,8 @@ const Reports = () => {
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterDate, setFilterDate] = useState('all');
   const [reportsList, setReportsList] = useState([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(25); // Varsayılan 25
 
   // Test raporlarını localStorage'dan yükle - storage utility kullan
   useEffect(() => {
@@ -88,6 +90,21 @@ const Reports = () => {
     
     return matchesSearch && matchesStatus && matchesDate;
   });
+
+  // Sayfalama için raporları dilimle
+  const totalPages = Math.ceil(filteredReports.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentReports = filteredReports.slice(startIndex, endIndex);
+
+  const handlePageChange = (pageNumber) => {
+    setCurrentPage(pageNumber);
+  };
+
+  const handleItemsPerPageChange = (e) => {
+    setItemsPerPage(Number(e.target.value));
+    setCurrentPage(1); // Sayfa başına öğe değiştiğinde ilk sayfaya dön
+  };
 
   const handleViewReport = (reportId) => {
     navigate(`/report/${reportId}`);
@@ -204,7 +221,7 @@ const Reports = () => {
               </tr>
             </thead>
             <tbody>
-              {filteredReports.map((report) => {
+              {currentReports.map((report) => {
                 const testName = report.testName || report.name || 'İsimsiz Test';
                 const description = report.description || '';
                 const totalSteps = report.totalSteps || 0;
@@ -285,6 +302,34 @@ const Reports = () => {
               })}
             </tbody>
           </table>
+        </div>
+        {/* Pagination Controls */}
+        <div className="pagination-controls">
+          <div className="items-per-page">
+            <label>Sayfa başına rapor:</label>
+            <select value={itemsPerPage} onChange={handleItemsPerPageChange}>
+              <option value={25}>25</option>
+              <option value={50}>50</option>
+              <option value={100}>100</option>
+            </select>
+          </div>
+          <div className="pagination-buttons">
+            <button 
+              className="btn btn-secondary btn-sm"
+              onClick={() => handlePageChange(currentPage - 1)}
+              disabled={currentPage === 1}
+            >
+              Önceki
+            </button>
+            <span>Sayfa {currentPage} / {totalPages}</span>
+            <button 
+              className="btn btn-secondary btn-sm"
+              onClick={() => handlePageChange(currentPage + 1)}
+              disabled={currentPage === totalPages}
+            >
+              Sonraki
+            </button>
+          </div>
         </div>
       </div>
     </div>
