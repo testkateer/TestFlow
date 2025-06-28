@@ -14,7 +14,8 @@ import {
   CheckSquare,
   Square,
   X,
-  Upload
+  Upload,
+  AlertCircle
 } from 'lucide-react';
 import { exportTestFlow, importTestFlow } from '../utils/testUtils';
 import { runTestWithHandling } from '../utils/testRunner';
@@ -23,7 +24,7 @@ import { getStatusText, getBrowserIcon } from '../utils/statusUtils';
 import { formatDateTime} from '../utils/dateUtils';
 import { saveTestReportToStorage, calculateTestDuration } from '../utils/reportUtils';
 import { toast, notify } from '../utils/notificationUtils';
-import { confirmActions } from '../utils/modalUtils';
+import { confirmActions, modal, confirm } from '../utils/modalUtils';
 import { LoadingState, ErrorState, NoDataState, PageHeader } from '../components';
 import '../styles/main.css';
 
@@ -368,7 +369,7 @@ const TestList = () => {
         { id: 'custom', icon: 'Code' }
       ];
 
-      // Dosya seçme ve okuma işlemi için importTestFlow'u çağır
+      // Dosya seçme diyaloğu oluştur
       const fileInput = document.createElement('input');
       fileInput.type = 'file';
       fileInput.accept = '.json';
@@ -385,48 +386,60 @@ const TestList = () => {
         for (let i = 0; i < files.length; i++) {
           const file = files[i];
           try {
-            const reader = new FileReader();
-            const fileContent = await new Promise((resolve, reject) => {
-              reader.onload = e => resolve(e.target.result);
-              reader.onerror = e => reject(e);
-              reader.readAsText(file);
-            });
-            
-            const testData = JSON.parse(fileContent);
-            
-            // Veri doğrulama
-            if (!testData.testName || !Array.isArray(testData.steps)) {
-              throw new Error(`Geçersiz test dosyası formatı: ${file.name}`);
-            }
-            
-            // Yeni ID oluştur
-            const newId = Date.now().toString() + Math.random().toString(36).substr(2, 9);
-            
-            // Test nesnesini oluştur
-            const importedTest = {
-              id: newId,
-              name: testData.testName,
-              steps: testData.steps,
-              status: 'pending',
-              lastRun: null,
-              duration: null,
-              createdAt: new Date().toISOString(),
-              browser: testData.browser || 'chrome'
+            // importTestFlow fonksiyonu için onImportSuccess callback'i tanımla
+            const onImportSuccess = (importedData) => {
+              // Yeni ID oluştur
+              const newId = Date.now().toString() + Math.random().toString(36).substr(2, 9);
+              
+              // Test nesnesini oluştur
+              const importedTest = {
+                id: newId,
+                name: importedData.testName,
+                steps: importedData.steps,
+                status: 'pending',
+                lastRun: null,
+                duration: null,
+                createdAt: new Date().toISOString(),
+                browser: importedData.browser || 'chrome'
+              };
+              
+              importedTests.push(importedTest);
             };
             
-            importedTests.push(importedTest);
+            // Dosyayı içeri aktar - özel dosya parametresi ile
+            await importTestFlow(stepTypes, onImportSuccess, file);
           } catch (error) {
-            console.error(`${file.name} içeri aktarma hatası:`, error);
+            console.error(`${file.name} için içeri aktarma hatası:`, error);
             errorCount++;
           }
         }
         
-        if (importedTests.length > 0) {
-          const updatedTests = [...tests, ...importedTests];
+        // Çakışma kontrolü yap
+        const existingTestNames = tests.map(test => test.name.toLowerCase());
+        const conflictingTests = [];
+        const nonConflictingTests = [];
+        
+        importedTests.forEach(test => {
+          if (existingTestNames.includes(test.name.toLowerCase())) {
+            conflictingTests.push(test);
+          } else {
+            nonConflictingTests.push(test);
+          }
+        });
+        
+        // Çakışmayan testleri direkt içeri aktar
+        if (nonConflictingTests.length > 0) {
+          const updatedTests = [...tests, ...nonConflictingTests];
           setTests(updatedTests);
           setToStorage('savedTestFlows', updatedTests);
           
-          notify.saveSuccess(`${importedTests.length} test içeri aktarıldı`);
+          notify.saveSuccess(`${nonConflictingTests.length} test içeri aktarıldı`);
+        }
+        
+        // Çakışan testler varsa modal göster
+        if (conflictingTests.length > 0) {
+          // Çakışma çözme modalını göster
+          await handleConflictingTests(conflictingTests);
         }
         
         if (errorCount > 0) {
@@ -436,6 +449,252 @@ const TestList = () => {
     } catch (error) {
       console.error('İçeri aktarma hatası:', error);
       notify.saveError('Test içeri aktarma');
+    }
+  };
+
+  // Çakışan testleri yönetme fonksiyonu
+  const handleConflictingTests = async (conflictingTests) => {
+    if (conflictingTests.length === 0) return;
+    
+    // Tek bir test için çakışma çözme
+    if (conflictingTests.length === 1) {
+      const test = conflictingTests[0];
+      const existingTest = tests.find(t => t.name.toLowerCase() === test.name.toLowerCase());
+      
+      const action = await confirm({
+        title: 'Test İsmi Çakışması',
+        message: `"${test.name}" isimli bir test zaten mevcut. Ne yapmak istersiniz?`,
+        confirmText: 'Üzerine Yaz',
+        cancelText: 'Yeni İsimle Kaydet',
+        confirmVariant: 'warning',
+        showCloseButton: true,
+        closeOnEsc: true,
+        closeOnOverlay: true
+      });
+      
+      if (action === true) {
+        // Üzerine yaz
+        const updatedTests = tests.map(t => {
+          if (t.id === existingTest.id) {
+            return {
+              ...t,
+              steps: test.steps,
+              browser: test.browser,
+              updatedAt: new Date().toISOString()
+            };
+          }
+          return t;
+        });
+        
+        setTests(updatedTests);
+        setToStorage('savedTestFlows', updatedTests);
+        notify.saveSuccess(`"${test.name}" testi güncellendi`);
+      } else if (action === false) {
+        // Yeni isimle kaydet
+        const newName = `${test.name} (Kopyası)`;
+        const newTest = {
+          id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+          name: newName,
+          steps: test.steps,
+          status: 'pending',
+          lastRun: null,
+          duration: null,
+          createdAt: new Date().toISOString(),
+          browser: test.browser
+        };
+        
+        const updatedTests = [...tests, newTest];
+        setTests(updatedTests);
+        setToStorage('savedTestFlows', updatedTests);
+        notify.saveSuccess(`"${newName}" testi oluşturuldu`);
+      }
+      // Eğer modal kapatılırsa hiçbir şey yapma
+    } 
+    // Birden fazla çakışan test varsa
+    else {
+      // Toplu çakışma çözme için özel bir modal göster
+      const modalContent = (
+        <div className="conflict-resolution-modal">
+          <div className="conflict-header">
+            <AlertCircle size={24} color="#f59e0b" />
+            <h3>{conflictingTests.length} adet test ismi çakışması</h3>
+          </div>
+          <p className="conflict-description">
+            Aşağıdaki testler mevcut testlerle aynı isimlere sahip. Her biri için ne yapmak istediğinizi seçin.
+          </p>
+          <div className="conflict-list">
+            {conflictingTests.map((test, index) => (
+              <div key={index} className="conflict-item">
+                <div className="conflict-test-info">
+                  <strong>{test.name}</strong>
+                </div>
+                <div className="conflict-actions">
+                  <button 
+                    className="btn btn-sm btn-warning"
+                    onClick={() => handleSingleConflict(test, 'overwrite')}
+                  >
+                    Üzerine Yaz
+                  </button>
+                  <button 
+                    className="btn btn-sm btn-secondary"
+                    onClick={() => handleSingleConflict(test, 'rename')}
+                  >
+                    Yeni İsimle Kaydet
+                  </button>
+                  <button 
+                    className="btn btn-sm btn-danger"
+                    onClick={() => handleSingleConflict(test, 'skip')}
+                  >
+                    Atla
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="conflict-bulk-actions">
+            <button 
+              className="btn btn-warning"
+              onClick={() => handleBulkConflicts(conflictingTests, 'overwrite')}
+            >
+              Tümünün Üzerine Yaz
+            </button>
+            <button 
+              className="btn btn-secondary"
+              onClick={() => handleBulkConflicts(conflictingTests, 'rename')}
+            >
+              Tümünü Yeni İsimle Kaydet
+            </button>
+            <button 
+              className="btn btn-danger"
+              onClick={() => handleBulkConflicts(conflictingTests, 'skip')}
+            >
+              Tümünü Atla
+            </button>
+          </div>
+        </div>
+      );
+      
+      // Modal'ı göster
+      const { id, resolve } = await modal.show({
+        title: 'Test İsmi Çakışmaları',
+        content: modalContent,
+        width: '600px',
+        showCloseButton: true,
+        closeOnEsc: false,
+        closeOnOverlay: false
+      });
+      
+      // Modal'ı kapatma fonksiyonu
+      const closeModal = () => {
+        modal.close(id);
+        resolve(null);
+      };
+      
+      // Tek bir çakışmayı çözme
+      const handleSingleConflict = async (test, action) => {
+        const existingTest = tests.find(t => t.name.toLowerCase() === test.name.toLowerCase());
+        let updatedTests = [...tests];
+        
+        if (action === 'overwrite') {
+          // Üzerine yaz
+          updatedTests = tests.map(t => {
+            if (t.id === existingTest.id) {
+              return {
+                ...t,
+                steps: test.steps,
+                browser: test.browser,
+                updatedAt: new Date().toISOString()
+              };
+            }
+            return t;
+          });
+          
+          notify.saveSuccess(`"${test.name}" testi güncellendi`);
+        } else if (action === 'rename') {
+          // Yeni isimle kaydet
+          const newName = `${test.name} (Kopyası)`;
+          const newTest = {
+            id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+            name: newName,
+            steps: test.steps,
+            status: 'pending',
+            lastRun: null,
+            duration: null,
+            createdAt: new Date().toISOString(),
+            browser: test.browser
+          };
+          
+          updatedTests = [...tests, newTest];
+          notify.saveSuccess(`"${newName}" testi oluşturuldu`);
+        } else if (action === 'skip') {
+          // Atla - hiçbir şey yapma
+          notify.info(`"${test.name}" testi atlandı`);
+        }
+        
+        // Çakışan testi listeden kaldır
+        const updatedConflictingTests = conflictingTests.filter(t => 
+          t.name.toLowerCase() !== test.name.toLowerCase()
+        );
+        
+        // Testleri güncelle
+        setTests(updatedTests);
+        setToStorage('savedTestFlows', updatedTests);
+        
+        // Eğer başka çakışan test kalmadıysa modal'ı kapat
+        if (updatedConflictingTests.length === 0) {
+          closeModal();
+        }
+      };
+      
+      // Toplu çakışma çözme
+      const handleBulkConflicts = async (conflictTests, action) => {
+        let updatedTests = [...tests];
+        
+        if (action === 'overwrite') {
+          // Tümünün üzerine yaz
+          conflictTests.forEach(test => {
+            const existingTest = tests.find(t => t.name.toLowerCase() === test.name.toLowerCase());
+            updatedTests = updatedTests.map(t => {
+              if (t.id === existingTest.id) {
+                return {
+                  ...t,
+                  steps: test.steps,
+                  browser: test.browser,
+                  updatedAt: new Date().toISOString()
+                };
+              }
+              return t;
+            });
+          });
+          
+          notify.saveSuccess(`${conflictTests.length} test güncellendi`);
+        } else if (action === 'rename') {
+          // Tümünü yeni isimle kaydet
+          const newTests = conflictTests.map(test => ({
+            id: Date.now().toString() + Math.random().toString(36).substr(2, 9) + Math.random(),
+            name: `${test.name} (Kopyası)`,
+            steps: test.steps,
+            status: 'pending',
+            lastRun: null,
+            duration: null,
+            createdAt: new Date().toISOString(),
+            browser: test.browser
+          }));
+          
+          updatedTests = [...tests, ...newTests];
+          notify.saveSuccess(`${newTests.length} yeni test oluşturuldu`);
+        } else if (action === 'skip') {
+          // Tümünü atla - hiçbir şey yapma
+          notify.info(`${conflictTests.length} test atlandı`);
+        }
+        
+        // Testleri güncelle
+        setTests(updatedTests);
+        setToStorage('savedTestFlows', updatedTests);
+        
+        // Modal'ı kapat
+        closeModal();
+      };
     }
   };
 

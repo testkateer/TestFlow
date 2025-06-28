@@ -4884,3 +4884,96 @@ h1 svg, h2 svg, h3 svg, h4 svg, h5 svg, h6 svg {
     margin: 0 16px 8px;
   }
 }
+
+/* Çakışma çözme modalı stilleri */
+.conflict-resolution-modal {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.conflict-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.conflict-description {
+  margin-bottom: 1rem;
+  color: var(--text-secondary);
+}
+
+.conflict-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  max-height: 300px;
+  overflow-y: auto;
+  margin-bottom: 1rem;
+  padding: 0.5rem;
+  border-radius: 0.5rem;
+  background-color: var(--bg-secondary);
+}
+
+.conflict-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem;
+  border-radius: 0.5rem;
+  background-color: var(--bg-primary);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.conflict-test-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.conflict-file-name {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.conflict-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.conflict-bulk-actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border-color);
+}
+
+/* Karanlık tema desteği */
+[data-theme="dark"] .conflict-list {
+  background-color: var(--bg-secondary-dark);
+}
+
+[data-theme="dark"] .conflict-item {
+  background-color: var(--bg-primary-dark);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+/* Responsive tasarım */
+@media (max-width: 768px) {
+  .conflict-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+  
+  .conflict-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+  
+  .conflict-bulk-actions {
+    flex-direction: column;
+  }
+}

@@ -32,8 +32,15 @@ export const exportTestFlow = (testData, fileName) => {
   }
 };
 
-export const importTestFlow = (stepTypes, onImportSuccess) => {
+export const importTestFlow = (stepTypes, onImportSuccess, customFile = null) => {
   return new Promise((resolve, reject) => {
+    // Eğer özel bir dosya verilmişse, direkt onu kullan
+    if (customFile) {
+      processFile(customFile);
+      return;
+    }
+
+    // Özel dosya yoksa, dosya seçme diyaloğunu göster
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = '.json';
@@ -44,6 +51,12 @@ export const importTestFlow = (stepTypes, onImportSuccess) => {
         return;
       }
 
+      processFile(file);
+    };
+    input.click();
+
+    // Dosya işleme fonksiyonu
+    function processFile(file) {
       const reader = new FileReader();
       reader.onload = (e) => {
         try {
@@ -75,7 +88,8 @@ export const importTestFlow = (stepTypes, onImportSuccess) => {
 
           const importedData = {
             testName: testData.testName,
-            steps: validSteps
+            steps: validSteps,
+            browser: testData.browser || 'chrome'
           };
 
           if (onImportSuccess) {
@@ -91,7 +105,6 @@ export const importTestFlow = (stepTypes, onImportSuccess) => {
         }
       };
       reader.readAsText(file);
-    };
-    input.click();
+    }
   });
 }; 
