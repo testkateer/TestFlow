@@ -14,34 +14,34 @@ import {
   Type,
   Eye,
   RefreshCw,
-  Zap
+  Zap,
+  PlayCircle
 } from 'lucide-react';
 
-// Test durumu için icon döndür
-export const getStatusIcon = (status, size = 16, className = '') => {
-  const iconProps = { size, className: `status-icon ${status} ${className}` };
-  
+/**
+ * Test durumuna göre uygun ikonu döndürür
+ * @param {string} status - Test durumu ('success', 'error', 'running', vs.)
+ * @returns {JSX.Element} Duruma uygun Lucide ikon bileşeni
+ */
+export const getStatusIcon = (status) => {
   switch (status) {
-    case 'success': 
-      return <CheckCircle {...iconProps} />;
-    case 'error': 
-      return <XCircle {...iconProps} />;
-    case 'running': 
-      return <AlertCircle {...iconProps} />;
-    case 'pending':
-      return <Clock {...iconProps} />;
-    default: 
-      return <AlertCircle {...iconProps} />;
+    case 'success': return <CheckCircle size={16} />;
+    case 'error': return <XCircle size={16} />;
+    case 'running': return <PlayCircle size={16} />;
+    default: return <AlertCircle size={16} />;
   }
 };
 
-// Test durumu için Türkçe metin döndür
+/**
+ * Test durumuna göre Türkçe açıklama döndürür
+ * @param {string} status - Test durumu ('success', 'error', 'running', vs.)
+ * @returns {string} Duruma uygun Türkçe açıklama
+ */
 export const getStatusText = (status) => {
   switch (status) {
     case 'success': return 'Başarılı';
     case 'error': return 'Başarısız';
     case 'running': return 'Çalışıyor';
-    case 'pending': return 'Bekliyor';
     default: return 'Bilinmiyor';
   }
 };
@@ -113,7 +113,7 @@ export const calculateSuccessRate = (passed, total) => {
 // Durum badge component'i
 export const StatusBadge = ({ status, children, className = '' }) => (
   <span className={`status-badge ${getStatusClass(status)} ${className}`}>
-    {getStatusIcon(status, 16)}
+    {getStatusIcon(status)}
     {children || getStatusText(status)}
   </span>
 );

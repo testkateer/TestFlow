@@ -1,4 +1,4 @@
-  import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Calendar, 
   Clock, 
@@ -12,6 +12,8 @@ import {
 } from 'lucide-react';
 import { getFromStorage} from '../utils/storageUtils';
 import { clearExpiredRunningTests } from '../utils/testRunner';
+import { getStatusIcon, getStatusText } from '../utils/statusUtils';
+import { formatRelativeTime } from '../utils/dateUtils';
 import '../styles/main.css';
 
 const Dashboard = () => {
@@ -111,7 +113,7 @@ const Dashboard = () => {
           name: report.testName,
           status: report.status,
           duration: report.duration || '0s',
-          timestamp: formatTimestamp(report.timestamp || report.date)
+          timestamp: formatRelativeTime(report.timestamp || report.date)
         }));
     } catch (error) {
       console.error('Son testler yükleme hatası:', error);
@@ -148,37 +150,11 @@ const Dashboard = () => {
     }
   };
 
-  // Zaman damgasını daha okunabilir formata çevir
-  const formatTimestamp = (timestamp) => {
-    try {
-      const now = new Date();
-      const testDate = new Date(timestamp);
-      const diffInMinutes = Math.floor((now - testDate) / 60000);
-      
-      if (diffInMinutes < 1) return 'Az önce';
-      if (diffInMinutes < 60) return `${diffInMinutes} dakika önce`;
-      if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)} saat önce`;
-      
-      // Tarih ve saat bilgisini birlikte göster
-      const dateStr = testDate.toLocaleDateString('tr-TR');
-      const timeStr = testDate.toLocaleTimeString('tr-TR', { 
-        hour: '2-digit', 
-        minute: '2-digit' 
-      });
-      return `${dateStr} ${timeStr}`;
-    } catch (error) {
-      return 'Bilinmeyen';
-    }
-  };
-
   // Tüm verileri yükle
   const loadDashboardData = async () => {
     try {
       setIsLoading(true);
       setError(null);
-      
-      // Küçük bir delay ekle (loading animasyonunu görmek için)
-      await new Promise(resolve => setTimeout(resolve, 300));
       
       const summaryData = loadTestSummaryFromStorage();
       const recentData = loadRecentTestsFromStorage();
@@ -229,15 +205,6 @@ const Dashboard = () => {
     };
   }, []);
 
-  const getStatusIcon = (status) => {
-    switch (status) {
-      case 'success': return <CheckCircle size={16} />;
-      case 'error': return <XCircle size={16} />;
-      case 'running': return <PlayCircle size={16} />;
-      default: return <AlertCircle size={16} />;
-    }
-  };
-
   // Test raporuna yönlendirme fonksiyonu
   const navigateToTestReport = (testId) => {
     window.location.href = `/report/${testId}`;
@@ -251,22 +218,6 @@ const Dashboard = () => {
   // Veri yoksa boş durum mesajı göster
   const hasData = testSummary.length > 0 || recentTests.length > 0 || scheduledTests.length > 0;
 
-  if (isLoading) {
-    return (
-      <div className="dashboard">
-        <div className="page-header">
-          <div className="header-content">
-            <h1>Dashboard</h1>
-            <p>Test otomasyonu platform genel durumu</p>
-          </div>
-        </div>
-        <div className="loading-container">
-          <RefreshCw className="loading-spinner" size={24} />
-          <p>Veriler yükleniyor...</p>
-        </div>
-      </div>
-    );
-  }
 
   if (error) {
     return (
@@ -356,9 +307,7 @@ const Dashboard = () => {
                       <span className="test-duration">{test.duration}</span>
                       <span className={`status-badge status-${test.status}`}>
                         {getStatusIcon(test.status)}
-                        {test.status === 'success' && 'Başarılı'}
-                        {test.status === 'error' && 'Başarısız'}
-                        {test.status === 'running' && 'Çalışıyor'}
+                        {getStatusText(test.status)}
                       </span>
                     </div>
                   </div>
