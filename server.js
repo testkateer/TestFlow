@@ -29,12 +29,19 @@ app.post('/api/run-test', async (req, res) => {
     const result = await runner.runTestSequence(steps);
     await runner.closeBrowser();
     
-    res.json(result);
+    // Test adını sonuca ekle
+    const enrichedResult = {
+      ...result,
+      testName: testName
+    };
+    
+    res.json(enrichedResult);
   } catch (error) {
     console.error('Test çalıştırma hatası:', error);
     res.status(500).json({
       success: false,
-      error: error.message
+      error: error.message,
+      testName: testName
     });
   }
 });

@@ -39,20 +39,30 @@ const TestReport = () => {
         const report = getReportById(parseInt(id));
 
         if (report) {
+          // Test sonuçlarından istatistikleri hesapla
+          const totalSteps = report.totalSteps || (report.results ? report.results.length : 0);
+          const successfulSteps = report.successfulSteps || report.passedSteps || 0;
+          const failedSteps = totalSteps - successfulSteps;
+          
+          // Tarih formatını düzelt
+          const reportDate = new Date(report.timestamp || report.date);
+          const formattedDate = reportDate.toLocaleDateString('tr-TR');
+          const formattedTime = reportDate.toLocaleTimeString('tr-TR');
+          
           // Rapor verisini TestReport formatına çevir
           const formattedReport = {
             id: report.id,
-            name: report.testName,
-            description: report.description,
+            name: report.testName || report.name || 'İsimsiz Test',
+            description: report.description || `${totalSteps} adımlı test raporu`,
             browser: 'Chrome 120.0',
             resolution: '1920x1080',
-            createdDate: report.date,
-            lastRun: `${report.date} ${report.time}`,
-            status: report.status,
-            duration: report.duration,
-            totalSteps: report.totalSteps,
-            passedSteps: report.passedSteps,
-            failedSteps: report.totalSteps - report.passedSteps
+            createdDate: formattedDate,
+            lastRun: `${formattedDate} ${formattedTime}`,
+            status: report.status || 'unknown',
+            duration: report.duration || '0s',
+            totalSteps: totalSteps,
+            passedSteps: successfulSteps,
+            failedSteps: failedSteps
           };
           setTestDetails(formattedReport);
         } else {
@@ -81,18 +91,35 @@ const TestReport = () => {
       const report = getReportById(parseInt(id));
 
       if (report && report.results) {
-        return report.results.map((result, index) => ({
-          id: index + 1,
-          name: result.step?.name || `Adım ${index + 1}`,
-          type: result.step?.type || 'unknown',
-          status: result.result?.success ? 'success' : 'error',
-          duration: result.result?.duration || '0s',
-          description: result.result?.success
-            ? (result.result?.message || result.step?.config?.url || result.step?.config?.selector || 'Başarıyla tamamlandı')
-            : (result.step?.config?.url || result.step?.config?.selector || 'Test adımı'),
-          screenshot: true,
-          error: result.result?.success ? null : (result.result?.error || result.result?.message)
-        }));
+        return report.results.map((result, index) => {
+          const isSuccess = result.result?.success === true;
+          const stepConfig = result.step?.config || {};
+          
+          // Adım açıklaması oluştur
+          let description = '';
+          if (stepConfig.url) {
+            description = stepConfig.url;
+          } else if (stepConfig.selector) {
+            description = stepConfig.selector;
+          } else if (stepConfig.text) {
+            description = stepConfig.text;
+          } else if (stepConfig.description) {
+            description = stepConfig.description;
+          } else {
+            description = isSuccess ? 'Başarıyla tamamlandı' : 'Test adımı başarısız';
+          }
+          
+          return {
+            id: index + 1,
+            name: result.step?.name || `Adım ${index + 1}`,
+            type: result.step?.type || 'unknown',
+            status: isSuccess ? 'success' : 'error',
+            duration: result.result?.duration || '1.0s',
+            description: description,
+            screenshot: true,
+            error: isSuccess ? null : (result.result?.error || result.result?.message || 'Adım başarısız oldu')
+          };
+        });
       }
     } catch (error) {
       console.error('Step details oluşturma hatası:', error);
@@ -124,13 +151,18 @@ const TestReport = () => {
 
       // Aynı test için tüm raporları bul
       // Bu basit implementasyon - gelecekte test ID'ye göre filtrelenebilir
-      return [report].slice(0, 5).map((report, index) => ({
-        id: report.id,
-        date: `${report.date} ${report.time}`,
-        status: report.status,
-        duration: report.duration,
-        trigger: report.trigger
-      }));
+      return [report].slice(0, 5).map((report, index) => {
+        const reportDate = new Date(report.timestamp || report.date);
+        const formattedDateTime = `${reportDate.toLocaleDateString('tr-TR')} ${reportDate.toLocaleTimeString('tr-TR')}`;
+        
+        return {
+          id: report.id,
+          date: formattedDateTime,
+          status: report.status || 'unknown',
+          duration: report.duration || '0s',
+          trigger: report.trigger || 'Manuel'
+        };
+      });
     } catch (error) {
       console.error('Execution history oluşturma hatası:', error);
       return [{
@@ -404,7 +436,11 @@ const TestReport = () => {
               <CheckCircle size={16} />
               <div>
                 <span className="stat-label">Başarı Oranı</span>
-                <span className="stat-value">{Math.round((testDetails.passedSteps / testDetails.totalSteps) * 100)}%</span>
+                <span className="stat-value">
+                  {testDetails.totalSteps > 0 
+                    ? Math.round((testDetails.passedSteps / testDetails.totalSteps) * 100)
+                    : 0}%
+                </span>
               </div>
             </div>
           </div>

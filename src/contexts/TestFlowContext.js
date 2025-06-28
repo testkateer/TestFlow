@@ -309,7 +309,9 @@ export const TestFlowProvider = ({ children }) => {
     const newReport = {
       ...testReport,
       id: testReport.id || Date.now(),
-      timestamp: testReport.timestamp || new Date().toISOString()
+      timestamp: testReport.timestamp || new Date().toISOString(),
+      testName: testReport.testName || testReport.name || 'İsimsiz Test',
+      status: testReport.status || 'error'
     };
     
     dispatch({ type: ACTION_TYPES.ADD_TEST_REPORT, payload: newReport });

@@ -60,11 +60,19 @@ export const runTestWithHandling = async (testData, options = {}) => {
     // Test sonucunu analiz et
     const analysisResult = analyzeTestResult(result, testData);
     
+    // Test adını sonuca ekle
+    const enrichedResult = {
+      ...analysisResult.result,
+      testName: testData.testName || testData.name,
+      status: analysisResult.finalStatus,
+      duration: analysisResult.duration
+    };
+    
     if (analysisResult.isSuccess) {
-      if (onSuccess) onSuccess(analysisResult.result);
+      if (onSuccess) onSuccess(enrichedResult);
       showSuccessMessage(analysisResult);
     } else {
-      if (onError) onError(analysisResult.result);
+      if (onError) onError(enrichedResult);
       showErrorMessage(analysisResult);
     }
     
@@ -79,6 +87,8 @@ export const runTestWithHandling = async (testData, options = {}) => {
     const errorResult = {
       success: false,
       error: error.message,
+      testName: testData.testName || testData.name,
+      status: 'error',
       testData
     };
     

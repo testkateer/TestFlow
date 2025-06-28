@@ -230,7 +230,7 @@ const Reports = () => {
                   <th>Süre</th>
                   <th>Tarih & Saat</th>
                   <th>Tetikleyici</th>
-                  <th>Loglar</th>
+                  <th>İşlemler</th>
                 </tr>
               </thead>
               <tbody>
@@ -244,7 +244,12 @@ const Reports = () => {
                   const trigger = report.trigger || 'Manuel';
                   
                   return (
-                  <tr key={report.id}>
+                  <tr 
+                    key={report.id} 
+                    className="report-row clickable"
+                    onClick={() => handleViewReport(report.id)}
+                    title="Raporu görüntülemek için tıklayın"
+                  >
                     <td>
                       <div className="test-info">
                         <h4>
@@ -293,14 +298,11 @@ const Reports = () => {
                     <td>
                       <div className="action-buttons">
                         <button 
-                          className="btn btn-primary btn-sm"
-                          onClick={() => handleViewReport(report.id)}
-                        >
-                          Görüntüle
-                        </button>
-                        <button 
                           className="btn btn-secondary btn-sm"
-                          onClick={() => handleDownloadReport(report)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDownloadReport(report);
+                          }}
                         >
                           İndir
                         </button>

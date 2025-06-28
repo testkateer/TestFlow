@@ -81,7 +81,7 @@ const Dashboard = () => {
         .slice(0, 5)
         .map(report => ({
           id: report.id,
-          name: report.testName,
+          name: report.testName || report.name,
           status: report.status,
           duration: report.duration || '0s',
           timestamp: formatRelativeTime(report.timestamp || report.date)

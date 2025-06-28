@@ -26,6 +26,7 @@ import { toast } from '../utils/notifications';
 import { confirmActions, modal, confirm } from '../utils/modalUtils';
 import { LoadingState, ErrorState, NoDataState, PageHeader } from '../components';
 import { useTestFlow } from '../contexts/TestFlowContext';
+import { STEP_TYPES } from '../constants/stepTypes';
 import '../styles/main.css';
 
 const TestList = () => {
@@ -303,16 +304,8 @@ const TestList = () => {
   // Toplu içeri aktarma işlevi
   const handleImportTests = async () => {
     try {
-      // Adım türlerini al (step tiplerini belirtmek için)
-      const stepTypes = [
-        { id: 'navigation', icon: 'Globe' },
-        { id: 'click', icon: 'MousePointer' },
-        { id: 'input', icon: 'Type' },
-        { id: 'screenshot', icon: 'Camera' },
-        { id: 'wait', icon: 'Clock' },
-        { id: 'assertion', icon: 'CheckCircle' },
-        { id: 'custom', icon: 'Code' }
-      ];
+      // Ortak stepTypes tanımını kullan
+      const stepTypes = STEP_TYPES;
 
       // Dosya seçme diyaloğu oluştur
       const fileInput = document.createElement('input');

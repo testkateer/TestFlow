@@ -10,6 +10,8 @@ export const exportTestFlow = (testData, fileName) => {
       version: '1.0'
     };
 
+
+
     const jsonString = JSON.stringify(exportData, null, 2);
     const blob = new Blob([jsonString], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
@@ -67,6 +69,8 @@ export const importTestFlow = (stepTypes, onImportSuccess, customFile = null) =>
             throw new Error('Geçersiz test dosyası formatı');
           }
 
+
+
           // Icon mapping için stepTypes'ı kullan
           const getIconForType = (stepType) => {
             const stepTypeObj = stepTypes.find(st => st.id === stepType);
@@ -74,16 +78,46 @@ export const importTestFlow = (stepTypes, onImportSuccess, customFile = null) =>
           };
 
           // Adım verilerini doğrula ve icon'ları düzelt
-          const validSteps = testData.steps.filter(step => 
-            step.id && step.type && step.name && step.config
-          ).map(step => ({
+          const validSteps = testData.steps.filter(step => {
+            const hasBasicFields = step.id && step.type && step.name && step.config;
+            const hasValidConfig = step.config && typeof step.config === 'object';
+            
+            // Navigate adımı için URL kontrolü
+            if (step.type === 'navigate') {
+              const hasUrl = step.config.url && step.config.url.trim() !== '';
+              if (!hasUrl) {
+                console.warn(`Navigate adımı URL eksik:`, step);
+                console.warn(`Step config:`, step.config);
+                return false; // URL yoksa adımı geçersiz say
+              }
+              return hasBasicFields && hasValidConfig;
+            }
+            
+            return hasBasicFields && hasValidConfig;
+          }).map((step, index) => ({
             ...step,
             icon: getIconForType(step.type), // Icon'u type'a göre yeniden ata
-            id: Date.now() + Math.random() // ID'yi yeniden oluştur
+            id: Date.now() + index + Math.random(), // ID'yi yeniden oluştur (benzersiz)
+            config: { 
+              ...step.config,
+              // Navigate adımı için URL'in korunduğundan emin ol
+              ...(step.type === 'navigate' && step.config.url && { url: step.config.url }),
+              // Diğer adım tipleri için de önemli alanları koru
+              ...(step.type === 'click' && step.config.selector && { selector: step.config.selector }),
+              ...(step.type === 'input' && step.config.selector && step.config.text !== undefined && { 
+                selector: step.config.selector, 
+                text: step.config.text 
+              }),
+              ...(step.type === 'wait' && step.config.duration && { duration: step.config.duration }),
+              ...(step.type === 'verify' && step.config.selector && { selector: step.config.selector })
+            }
           })).filter(step => step.icon !== null); // Geçersiz type'ları filtrele
 
           if (validSteps.length !== testData.steps.length) {
-            // ... existing code ...
+            const skippedCount = testData.steps.length - validSteps.length;
+            console.warn(`${skippedCount} adım geçersiz olduğu için atlandı`);
+            console.warn('Geçerli adımlar:', validSteps);
+            console.warn('Ham adımlar:', testData.steps);
           }
 
           const importedData = {
@@ -91,6 +125,8 @@ export const importTestFlow = (stepTypes, onImportSuccess, customFile = null) =>
             steps: validSteps,
             browser: testData.browser || 'chrome'
           };
+
+
 
           if (onImportSuccess) {
             onImportSuccess(importedData);

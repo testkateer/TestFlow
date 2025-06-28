@@ -6,12 +6,6 @@ import {
   Download, 
   Upload, 
   Settings, 
-  MousePointer,
-  Type,
-  Navigation,
-  Clock,
-  Eye,
-  RefreshCw,
   Plus,
   Trash2,
   Edit,
@@ -20,7 +14,8 @@ import {
   Undo,
   Redo,
   Copy,
-  Clipboard
+  Clipboard,
+  RefreshCw
 } from 'lucide-react';
 import useHistory from '../hooks/useHistory';
 import useKeyboardShortcuts from '../hooks/useKeyboardShortcuts';
@@ -32,6 +27,7 @@ import { toast} from '../utils/notifications';
 import '../styles/main.css';
 import { useModal } from '../contexts/ModalContext';
 import { useTestFlow } from '../contexts/TestFlowContext';
+import { STEP_TYPES } from '../constants/stepTypes';
 
 // Dnd-kit imports
 import {
@@ -82,14 +78,7 @@ const TestEditor = () => {
 
   const hasUnsavedChanges = canUndo && (steps.length > 0 || testName.trim() !== 'Yeni Test Senaryosu');
 
-  const stepTypes = useMemo(() => [
-    { id: 'navigate', name: 'Git', icon: Navigation, description: 'Belirtilen URL ye git' },
-    { id: 'click', name: 'Tıkla', icon: MousePointer, description: 'Element üzerine tıkla' },
-    { id: 'input', name: 'Metin Gir', icon: Type, description: 'Alana metin gir' },
-    { id: 'wait', name: 'Bekle', icon: Clock, description: 'Belirtilen süre bekle' },
-    { id: 'verify', name: 'Doğrula', icon: Eye, description: 'Element varlığını doğrula' },
-    { id: 'refresh', name: 'Yenile', icon: RefreshCw, description: 'Sayfayı yenile' }
-  ], []);
+  const stepTypes = useMemo(() => STEP_TYPES, []);
 
   const activeStepForOverlay = steps.find(step => step.id === activeId);
   const activeStepTypeForOverlay = stepTypes.find(st => `draggable-${st.id}` === activeId);
