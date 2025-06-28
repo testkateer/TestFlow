@@ -81,7 +81,7 @@ const TestEditor = () => {
   const [activeId, setActiveId] = useState(null);
   const [isOverTrash, setIsOverTrash] = useState(false);
 
-  const hasUnsavedChanges = canUndo;
+  const hasUnsavedChanges = canUndo && (steps.length > 0 || testName.trim() !== 'Yeni Test Senaryosu');
 
   const stepTypes = [
     { id: 'navigate', name: 'Git', icon: Navigation, description: 'Belirtilen URL ye git' },
@@ -675,7 +675,7 @@ const TestEditor = () => {
             )}
             <button className="btn btn-secondary" onClick={handleImportTestFlow} title={`İçe Aktar (${formatShortcut(shortcuts.import)})`}><Upload size={16} /> İçe Aktar</button>
             <button className="btn btn-secondary" onClick={handleExportTestFlow} title={`Dışa Aktar (${formatShortcut(shortcuts.export)})`}><Download size={16} /> Dışa Aktar</button>
-            <button className="btn btn-primary" onClick={saveTestFlow} disabled={!hasUnsavedChanges || steps.length === 0} title={`Kaydet (${formatShortcut(shortcuts.save)})`}><Save size={16} /> Kaydet</button>
+            <button className="btn btn-primary" onClick={saveTestFlow} disabled={!hasUnsavedChanges} title={`Kaydet (${formatShortcut(shortcuts.save)})`}><Save size={16} /> Kaydet</button>
             <button className={`btn btn-success ${isRunning ? 'disabled' : ''}`} onClick={runTest} disabled={isRunning || steps.length === 0} title={`Çalıştır (${formatShortcut(shortcuts.run)})`}><Play size={16} /> {isRunning ? 'Çalışıyor...' : 'Çalıştır'}</button>
           </div>
       </div>

@@ -13,10 +13,13 @@ import { downloadTestReport } from '../utils/reportUtils';
 import { getFromStorage } from '../utils/storageUtils';
 import { isToday, isThisWeek } from '../utils/dateUtils';
 import { NoDataState, PageHeader } from '../components';
+import { useNotification } from '../contexts/NotificationContext';
+import { toast } from '../utils/notifications';
 import '../styles/main.css';
 
 const Reports = () => {
   const navigate = useNavigate();
+  const { showError, showSuccess } = useNotification();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterDate, setFilterDate] = useState('all');
@@ -27,8 +30,19 @@ const Reports = () => {
   // Test raporlarını localStorage'dan yükle - storage utility kullan
   useEffect(() => {
     const loadReports = () => {
-      const savedReports = getFromStorage('testReports', []);
-      setReportsList(savedReports);
+      try {
+        const savedReports = getFromStorage('testReports', []);
+        setReportsList(savedReports);
+        
+        // İlk yükleme sırasında rapor sayısını bildir
+        if (savedReports.length === 0) {
+          toast.info('Henüz test raporu bulunmuyor');
+        }
+      } catch (error) {
+        console.error('Raporlar yüklenirken hata oluştu:', error);
+        showError('Raporlar yüklenirken bir hata oluştu');
+        setReportsList([]);
+      }
     };
 
     loadReports();
@@ -89,6 +103,13 @@ const Reports = () => {
     return matchesSearch && matchesStatus && matchesDate;
   });
 
+  // Arama sonuçları için bildirim
+  useEffect(() => {
+    if (searchTerm && filteredReports.length === 0 && reportsList.length > 0) {
+      toast.info(`"${searchTerm}" için sonuç bulunamadı`);
+    }
+  }, [searchTerm, filteredReports.length, reportsList.length]);
+
   // Sayfalama için raporları dilimle
   const totalPages = Math.ceil(filteredReports.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
@@ -105,11 +126,28 @@ const Reports = () => {
   };
 
   const handleViewReport = (reportId) => {
-    navigate(`/report/${reportId}`);
+    try {
+      const report = reportsList.find(r => r.id === reportId);
+      if (report) {
+        navigate(`/report/${reportId}`);
+        toast.info(`"${report.testName || 'Test'}" raporu açılıyor`);
+      } else {
+        showError('Rapor bulunamadı');
+      }
+    } catch (error) {
+      console.error('Rapor açma hatası:', error);
+      showError('Rapor açılırken bir hata oluştu');
+    }
   };
 
   const handleDownloadReport = (report) => {
-    downloadTestReport(report);
+    try {
+      downloadTestReport(report);
+      toast.success(`"${report.testName || 'Test'}" raporu indirildi`);
+    } catch (error) {
+      console.error('Rapor indirme hatası:', error);
+      showError('Rapor indirilirken bir hata oluştu');
+    }
   };
 
   return (

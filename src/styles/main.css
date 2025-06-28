@@ -3954,16 +3954,6 @@ h1 svg, h2 svg, h3 svg, h4 svg, h5 svg, h6 svg {
   gap: var(--spacing-lg);
 }
 
-.breadcrumb {
-  font-size: var(--font-sm);
-  color: var(--text-tertiary);
-}
-
-.breadcrumb span:last-child {
-  color: var(--text-primary);
-  font-weight: 500;
-}
-
 .header-actions {
   display: flex;
   gap: var(--spacing-md);

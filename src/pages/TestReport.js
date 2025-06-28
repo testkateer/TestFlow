@@ -172,6 +172,7 @@ const TestReport = () => {
 
       if (originalReport) {
         downloadTestReport(originalReport);
+        toast.success(`"${originalReport.testName || 'Test'}" raporu başarıyla indirildi`);
       } else {
         showError('Rapor verisi bulunamadı.');
       }
@@ -339,9 +340,6 @@ const TestReport = () => {
             <ArrowLeft size={16} />
             Geri
           </button>
-          <div className="breadcrumb">
-            <span>Akışlar</span> / <span>{testDetails.name}</span> / <span>Rapor</span>
-          </div>
         </div>
         <div className="header-actions">
           <button className="btn btn-secondary">
