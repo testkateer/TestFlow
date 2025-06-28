@@ -177,15 +177,12 @@ const TestList = () => {
 
   // Test düzenleme işlevi - storage utility kullan
   const editTest = (test) => {
-    console.log('editTest çağrıldı, test data:', test);
     
     // Test verilerini geçici olarak kaydet - utility kullan
     setTempData('editingTest', test);
-    console.log('Test verileri geçici olarak kaydedildi');
     
     // Editor sayfasına yönlendir
     navigate(`/editor?edit=${test.id}`);
-    console.log('Editor sayfasına yönlendiriliyor, URL:', `/editor?edit=${test.id}`);
   };
 
   // Test export işlevi - ortak utility kullan

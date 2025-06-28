@@ -31,6 +31,24 @@ import '../styles/main.css';
 import { useNotification } from '../contexts/NotificationContext';
 import { useModal } from '../contexts/ModalContext';
 
+// Dnd-kit imports
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragOverlay,
+  defaultDropAnimationSideEffects,
+} from '@dnd-kit/core';
+import { arrayMove } from '@dnd-kit/sortable';
+
+// New modular components
+import DraggableStep from '../components/TestEditor/DraggableStep';
+import DroppableFlowCanvas from '../components/TestEditor/DroppableFlowCanvas';
+import SortableStep from '../components/TestEditor/SortableStep';
+import Trash from '../components/TestEditor/Trash';
+
 const TestEditor = () => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -54,6 +72,10 @@ const TestEditor = () => {
   const { showTripleConfirm } = useModal();
   const saveTestFlowRef = useRef();
 
+  // Dnd-kit states
+  const [activeId, setActiveId] = useState(null);
+  const [isOverTrash, setIsOverTrash] = useState(false);
+
   const hasUnsavedChanges = canUndo;
 
   const stepTypes = [
@@ -64,6 +86,18 @@ const TestEditor = () => {
     { id: 'verify', name: 'Doğrula', icon: Eye, description: 'Element varlığını doğrula' },
     { id: 'refresh', name: 'Yenile', icon: RefreshCw, description: 'Sayfayı yenile' }
   ];
+
+  const activeStepForOverlay = steps.find(step => step.id === activeId);
+  const activeStepTypeForOverlay = stepTypes.find(st => `draggable-${st.id}` === activeId);
+
+  // Dnd-kit sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    })
+  );
 
   useEffect(() => {
     const urlParams = new URLSearchParams(location.search);
@@ -101,7 +135,7 @@ const TestEditor = () => {
         showError('Test düzenlenirken bir hata oluştu.');
       }
     }
-  }, [location.search, navigate, showError, resetEditorState, stepTypes]);
+  }, [location.search, navigate, showError, resetEditorState]);
 
   useEffect(() => {
     const handleBeforeUnload = (event) => {
@@ -148,7 +182,7 @@ const TestEditor = () => {
     setEditorState(currentState => ({ ...currentState, testName: name }));
   };
 
-  const addStep = (stepType) => {
+  const addStep = (stepType, insertIndex = null) => {
     const newStep = {
       id: Date.now(),
       type: stepType.id,
@@ -156,7 +190,21 @@ const TestEditor = () => {
       icon: stepType.icon,
       config: getDefaultConfig(stepType.id)
     };
-    setEditorState(s => ({ ...s, steps: [...s.steps, newStep] }));
+    
+    setEditorState(s => {
+      const newSteps = [...s.steps];
+      if (insertIndex !== null && insertIndex >= 0 && insertIndex <= newSteps.length) {
+        // Insert at specific position
+        newSteps.splice(insertIndex, 0, newStep);
+      } else {
+        // Add to end (default behavior)
+        newSteps.push(newStep);
+      }
+      return { ...s, steps: newSteps };
+    });
+    
+    // Automatically select the new step to configure it
+    setSelectedStep(newStep);
   };
 
   const getDefaultConfig = (type) => {
@@ -176,6 +224,18 @@ const TestEditor = () => {
     if (selectedStep?.id === stepId) {
       setSelectedStep(null);
     }
+  };
+
+  const reorderSteps = (fromId, toId) => {
+    setEditorState(currentState => {
+      const oldIndex = currentState.steps.findIndex(s => s.id === fromId);
+      const newIndex = currentState.steps.findIndex(s => s.id === toId);
+      if (oldIndex === -1 || newIndex === -1) return currentState;
+      return {
+        ...currentState,
+        steps: arrayMove(currentState.steps, oldIndex, newIndex),
+      };
+    });
   };
 
   const updateStepConfig = (stepId, newConfig) => {
@@ -203,17 +263,14 @@ const TestEditor = () => {
         setIsRunning(true);
         setTestResults(null);
         setTempData('testRerun', { testName, steps });
-        // Başlatma bildirimi runTestWithHandling tarafından gösterilecek
       },
       onSuccess: (result) => {
         setTestResults(result);
         saveTestReport(result);
-        // Başarı bildirimi runTestWithHandling tarafından gösterilecek
       },
       onError: (result) => {
         setTestResults(result);
         saveTestReport(result);
-        // Hata bildirimi runTestWithHandling tarafından gösterilecek
       },
       onFinally: () => setIsRunning(false)
     });
@@ -230,11 +287,61 @@ const TestEditor = () => {
     importTestFlow(stepTypes, (importedData) => {
       resetEditorState({ testName: importedData.testName, steps: importedData.steps });
       setSelectedStep(null);
-      // TestEditor'da direkt içe aktarma yapıldığı için bildirim göster
       toast.importSuccess(importedData.testName, importedData.steps.length);
     });
   };
 
+  // --- DND-KIT HANDLERS ---
+  const handleDragStart = (event) => {
+    setActiveId(event.active.id);
+  };
+
+  const handleDragOver = (event) => {
+    const { over } = event;
+    setIsOverTrash(over?.id === 'trash-can');
+  };
+
+  const handleDragEnd = (event) => {
+    const { active, over } = event;
+
+    setActiveId(null);
+    setIsOverTrash(false);
+
+    if (!over) return;
+
+    if (over.id === 'trash-can') {
+      const draggedFromFlow = active.data.current?.type === 'flowStep';
+      if (draggedFromFlow) {
+        removeStep(active.id);
+        toast.info("Test adımı silindi.");
+      }
+      return;
+    }
+
+    const isMovingInFlow = active.data.current?.type === 'flowStep' && over.data.current?.type === 'flowStep';
+    if (isMovingInFlow) {
+      if (active.id !== over.id) {
+        reorderSteps(active.id, over.id);
+      }
+      return;
+    }
+    
+    const isDroppingNewStep = active.data.current?.type === 'stepType';
+    if (isDroppingNewStep) {
+      const stepType = active.data.current?.step;
+      if (stepType) {
+        // Check if dropping over an existing step to insert before it
+        if (over.data.current?.type === 'flowStep') {
+          const targetStepIndex = steps.findIndex(s => s.id === over.id);
+          addStep(stepType, targetStepIndex);
+        } else if (over.id === 'flow-end' || over.id === 'flow-canvas') {
+          // Dropping on end zone or empty canvas - add to end
+          addStep(stepType);
+        }
+      }
+    }
+  };
+  
   const saveTestFlow = useCallback(async () => {
     const validationResult = validateTestFlow({ testName, steps });
     if (!validationResult.isValid) {
@@ -248,358 +355,172 @@ const TestEditor = () => {
         id: Date.now(),
         name: testName,
         description: `${steps.length} adımlı test akışı`,
-        steps: steps,
-        createdAt: new Date().toISOString(),
-        lastRun: 'Hiç çalışmadı',
-        status: 'pending',
-        browser: 'chrome',
-        duration: '--',
-        type: 'manual'
+        steps,
+        createdAt: new Date().toISOString()
       };
-
-      const existingTestIndex = savedTests.findIndex(test => test.name === testName);
       
-      if (existingTestIndex !== -1) {
-        const shouldUpdate = await showTripleConfirm({
-          title: `"${testName}" adında bir test zaten mevcut. Güncellemek ister misiniz?`,
-          message: `"${testName}" adında bir test zaten mevcut. Güncellemek ister misiniz?`,
-          saveText: 'Evet',
-          exitText: 'Hayır',
-          cancelText: 'İptal'
-        });
-        if (shouldUpdate === 'save') {
-          savedTests[existingTestIndex] = { ...savedTests[existingTestIndex], ...newTest, id: savedTests[existingTestIndex].id, updatedAt: new Date().toISOString() };
-          toast.updateSuccess(testName);
-        } else if (shouldUpdate === 'exit') {
-          return;
-        }
+      const existingTestIndex = savedTests.findIndex(t => t.id === newTest.id);
+      if(existingTestIndex > -1){
+        savedTests[existingTestIndex] = newTest;
       } else {
         savedTests.push(newTest);
-        toast.saveSuccess(testName);
       }
-
-      setToStorage('savedTestFlows', savedTests);
-      resetEditorState({ testName, steps });
       
+      setToStorage('savedTestFlows', savedTests);
+      toast.saveSuccess(testName);
+      
+      resetEditorState({ testName, steps });
+
     } catch (error) {
-      toast.saveError(testName);
+      toast.error('Test akışı kaydedilirken hata oluştu.');
+      console.error("Save error:", error);
     }
-  }, [testName, steps, resetEditorState, showTripleConfirm]);
+  }, [testName, steps, resetEditorState]);
 
   saveTestFlowRef.current = saveTestFlow;
 
+  const renderSelectedStepConfig = () => {
+    if (!selectedStep) {
+      return (
+        <div className="no-selection">
+          <Settings size={48} className="settings-icon" />
+          <h4>Adım seçin</h4>
+          <p>Bir test adımını seçerek detaylarını düzenleyin</p>
+        </div>
+      );
+    }
+
+    const { id, config, icon: Icon, name } = selectedStep;
+
+    const handleConfigChange = (key, value) => {
+      updateStepConfig(id, { ...config, [key]: value });
+    };
+
+    return (
+      <div className="step-config">
+        <div className="config-header">
+          {Icon && <Icon size={20} />}
+          <span>{name}</span>
+        </div>
+        <div className="config-form">
+          {Object.entries(config).map(([key, value]) => (
+            <div className="form-group" key={key}>
+              <label className="capitalize">{key}:</label>
+              <input
+                type={typeof value === 'number' ? 'number' : 'text'}
+                value={value}
+                onChange={(e) => handleConfigChange(key, typeof value === 'number' ? parseInt(e.target.value, 10) || 0 : e.target.value)}
+                placeholder={`${key} değeri girin...`}
+              />
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
+  const dropAnimation = {
+    sideEffects: defaultDropAnimationSideEffects({
+      styles: {
+        active: {
+          opacity: '0.5',
+        },
+      },
+    }),
+  };
+
   return (
-    <div className="page-container">
-      <div className="editor-header">
-        <div className="header-content">
-          <div className="test-name-wrapper">
-            <Edit size={18} className="edit-icon" />
-            <input 
-              type="text" 
-              value={testName} 
-              onChange={(e) => setTestNameState(e.target.value)}
-              className="test-name-input"
-              placeholder="Test adı girin..."
-            />
-            {testName !== '' && (
-              <button 
-                className="test-name-clear-btn" 
-                onClick={() => setTestNameState('')}
-                title="Test adını temizle"
-              >
-                <X size={16} />
-              </button>
-            )}
-          </div>
-        </div>
-        <div className="header-actions">
-          <button className="btn btn-secondary" onClick={undo} disabled={!canUndo} title="Geri Al">
-            <Undo size={16} />
-            Geri Al
-          </button>
-          <button className="btn btn-secondary" onClick={redo} disabled={!canRedo} title="İleri Al">
-            <Redo size={16} />
-            İleri Al
-          </button>
-          <button className="btn btn-secondary" onClick={handleImportTestFlow}>
-            <Upload size={16} />
-            İçe Aktar
-          </button>
-          <button className="btn btn-secondary" onClick={handleExportTestFlow}>
-            <Download size={16} />
-            Dışa Aktar
-          </button>
-          <button className="btn btn-primary" onClick={saveTestFlow} disabled={!hasUnsavedChanges || steps.length === 0}>
-            <Save size={16} />
-            Kaydet
-          </button>
-          <button 
-            className={`btn btn-success ${isRunning ? 'disabled' : ''}`}
-            onClick={runTest}
-            disabled={isRunning || steps.length === 0}
-          >
-            <Play size={16} />
-            {isRunning ? 'Çalışıyor...' : 'Çalıştır'}
-          </button>
-        </div>
-      </div>
-
-      <div className="editor-content">
-        {/* Sol Panel - Adım Türleri */}
-        <div className="steps-panel card">
-          <h3>
-            <Plus size={16} style={{ marginRight: '6px', verticalAlign: 'middle' }} />
-            Test Adımları
-          </h3>
-          <div className="step-types">
-            {stepTypes.map((stepType) => {
-              const Icon = stepType.icon;
-              return (
-                <div 
-                  key={stepType.id}
-                  className="step-type"
-                  onClick={() => addStep(stepType)}
+    <DndContext 
+      sensors={sensors}
+      collisionDetection={closestCenter}
+      onDragStart={handleDragStart}
+      onDragOver={handleDragOver}
+      onDragEnd={handleDragEnd}
+    >
+      <div className="page-container">
+        <div className="editor-header">
+          <div className="header-content">
+            <div className="test-name-wrapper">
+              <Edit size={18} className="edit-icon" />
+              <input 
+                type="text" 
+                value={testName} 
+                onChange={(e) => setTestNameState(e.target.value)}
+                className="test-name-input"
+                placeholder="Test adı girin..."
+              />
+              {testName !== '' && (
+                <button 
+                  className="test-name-clear-btn" 
+                  onClick={() => setTestNameState('')}
+                  title="Test adını temizle"
                 >
-                  <Icon size={20} />
-                  <div className="step-type-info">
-                    <span className="step-type-name">{stepType.name}</span>
-                    <span className="step-type-desc">{stepType.description}</span>
-                  </div>
-                  <Plus size={16} className="add-icon" />
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Orta Panel - Akış Görünümü */}
-        <div className="flow-panel card">
-          <div className="flow-header">
-            <h3>
-              <RefreshCw size={16} style={{ marginRight: '6px', verticalAlign: 'middle' }} />
-              Test Akışı
-            </h3>
-            <span className="step-count">{steps.length} adım</span>
-          </div>
-          
-          <div className="flow-container">
-            {steps.length === 0 ? (
-              <div className="empty-flow">
-                <div className="empty-content">
-                  <Plus size={48} className="empty-icon" />
-                  <h4>Test adımı ekleyin</h4>
-                  <p>Sol panelden bir adım türü seçerek başlayın</p>
-                </div>
-              </div>
-            ) : (
-              <div className="flow-steps">
-                {steps.map((step, index) => {
-                  const Icon = step.icon;
-                  return (
-                    <div key={step.id} className="flow-step-container">
-                      <div 
-                        className={`flow-step ${selectedStep?.id === step.id ? 'selected' : ''}`}
-                        onClick={() => setSelectedStep(step)}
-                      >
-                        <div className="step-number">{index + 1}</div>
-                        <div className="step-content">
-                          <div className="step-header">
-                            <Icon size={16} />
-                            <span className="step-name">{step.name}</span>
-                          </div>
-                          <div className="step-description">
-                            {step.config.description || step.config.url || step.config.text || 'Yapılandırılmamış'}
-                          </div>
-                        </div>
-                        <div className="step-actions">
-                          <button 
-                            className="step-action-btn"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setSelectedStep(step);
-                            }}
-                          >
-                            <Edit size={12} />
-                          </button>
-                          <button 
-                            className="step-action-btn delete"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              removeStep(step.id);
-                            }}
-                          >
-                            <Trash2 size={12} />
-                          </button>
-                        </div>
-                      </div>
-                      {index < steps.length - 1 && (
-                        <div className="flow-connector">
-                          <div className="connector-arrow">↓</div>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Sağ Panel - Adım Detayları */}
-        <div className="config-panel card">
-          <h3>
-            <Edit size={16} style={{ marginRight: '6px', verticalAlign: 'middle' }} />
-            Adım Detayları
-          </h3>
-          
-          {selectedStep ? (
-            <div className="step-config">
-              <div className="config-header">
-                <selectedStep.icon size={20} />
-                <span>{selectedStep.name}</span>
-              </div>
-              
-              <div className="config-form">
-                {selectedStep.type === 'navigate' && (
-                  <div className="form-group">
-                    <label>URL:</label>
-                    <input
-                      type="text"
-                      value={selectedStep.config.url || ''}
-                      onChange={(e) => updateStepConfig(selectedStep.id, { url: e.target.value })}
-                      placeholder="https://example.com"
-                    />
-                  </div>
-                )}
-                
-                {selectedStep.type === 'click' && (
-                  <>
-                  <div className="form-group">
-                      <label>Adım Açıklaması:</label>
-                      <input
-                        type="text"
-                        value={selectedStep.config.description || ''}
-                        onChange={(e) => updateStepConfig(selectedStep.id, { description: e.target.value })}
-                        placeholder="Tıklama açıklaması"
-                      />
-                    </div>
-                    <div className="form-group">
-                      <label>Element/XPath/Selector Seçici:</label>
-                      <input
-                        type="text"
-                        value={selectedStep.config.selector || ''}
-                        onChange={(e) => updateStepConfig(selectedStep.id, { selector: e.target.value })}
-                        placeholder="#button"
-                      />
-                    </div>
-                    
-                  </>
-                )}
-                
-                {selectedStep.type === 'input' && (
-                  <>
-                    <div className="form-group">
-                      <label>Adım Açıklaması:</label>
-                      <input
-                        type="text"
-                        value={selectedStep.config.description || ''}
-                        onChange={(e) => updateStepConfig(selectedStep.id, { description: e.target.value })}
-                        placeholder="Alan açıklaması"
-                      />
-                    </div>
-                    <div className="form-group">
-                      <label>Element/XPath/Selector Seçici:</label>
-                      <input
-                        type="text"
-                        value={selectedStep.config.selector || ''}
-                        onChange={(e) => updateStepConfig(selectedStep.id, { selector: e.target.value })}
-                        placeholder="#input"
-                      />
-                    </div>
-                    <div className="form-group">
-                      <label>Metin:</label>
-                      <input
-                        type="text"
-                        value={selectedStep.config.text || ''}
-                        onChange={(e) => updateStepConfig(selectedStep.id, { text: e.target.value })}
-                        placeholder="Girilecek metin"
-                      />
-                    </div>
-                    
-                  </>
-                )}
-                
-                {selectedStep.type === 'wait' && (
-                  <>
-                    <div className="form-group">
-                      <label>Adım Açıklaması:</label>
-                      <input
-                        type="text"
-                        value={selectedStep.config.description || ''}
-                        onChange={(e) => updateStepConfig(selectedStep.id, { description: e.target.value })}
-                        placeholder="Bekleme açıklaması"
-                      />
-                    </div>
-                    <div className="form-group">
-                      <label>Süre (ms):</label>
-                      <input
-                        type="number"
-                        value={selectedStep.config.duration || ''}
-                        onChange={(e) => updateStepConfig(selectedStep.id, { duration: parseInt(e.target.value) || 0 })}
-                        placeholder="2000"
-                      />
-                    </div>
-                  </>
-                )}
-                
-                {selectedStep.type === 'verify' && (
-                  <>  
-                    <div className="form-group">
-                      <label>Adım Açıklaması:</label>
-                      <input
-                        type="text"
-                        value={selectedStep.config.description || ''}
-                        onChange={(e) => updateStepConfig(selectedStep.id, { description: e.target.value })}
-                        placeholder="Doğrulama açıklaması"
-                      />
-                    </div>
-                    <div className="form-group">
-                      <label>Element/XPath/Selector Seçici:</label>
-                      <input
-                        type="text"
-                        value={selectedStep.config.selector || ''}
-                        onChange={(e) => updateStepConfig(selectedStep.id, { selector: e.target.value })}
-                        placeholder="#element"
-                      />
-                    </div>
-                  </>
-                )}
-                
-                {selectedStep.type === 'refresh' && (
-                  <div className="form-group">
-                    <label>Adım Açıklaması:</label>
-                    <input
-                      type="text"
-                      value={selectedStep.config.description || ''}
-                      onChange={(e) => updateStepConfig(selectedStep.id, { description: e.target.value })}
-                      placeholder="Yenileme açıklaması"
-                    />
-                  </div>
-                )}
-              </div>
+                  <X size={16} />
+                </button>
+              )}
             </div>
-          ) : (
-            <div className="no-selection">
-              <Settings size={48} className="settings-icon" />
-              <h4>Adım seçin</h4>
-              <p>Bir test adımını seçerek detaylarını düzenleyin</p>
-            </div>
-          )}
+          </div>
+          <div className="header-actions">
+            <button className="btn btn-secondary" onClick={undo} disabled={!canUndo} title="Geri Al"><Undo size={16} /> Geri Al</button>
+            <button className="btn btn-secondary" onClick={redo} disabled={!canRedo} title="İleri Al"><Redo size={16} /> İleri Al</button>
+            <button className="btn btn-secondary" onClick={handleImportTestFlow}><Upload size={16} /> İçe Aktar</button>
+            <button className="btn btn-secondary" onClick={handleExportTestFlow}><Download size={16} /> Dışa Aktar</button>
+            <button className="btn btn-primary" onClick={saveTestFlow} disabled={!hasUnsavedChanges || steps.length === 0}><Save size={16} /> Kaydet</button>
+            <button className={`btn btn-success ${isRunning ? 'disabled' : ''}`} onClick={runTest} disabled={isRunning || steps.length === 0}><Play size={16} /> {isRunning ? 'Çalışıyor...' : 'Çalıştır'}</button>
+          </div>
         </div>
 
-      
+        <div className="editor-content">
+          <div className="steps-panel card">
+            <h3><Plus size={16} style={{ marginRight: '6px', verticalAlign: 'middle' }} />Test Adımları</h3>
+            <div className="step-types">
+              {stepTypes.map(stepType => (
+                <DraggableStep key={stepType.id} stepType={stepType} />
+              ))}
+            </div>
+            <Trash isDraggingOver={isOverTrash} />
+          </div>
+
+          <div className="flow-panel card">
+            <div className="flow-header">
+              <h3><RefreshCw size={16} style={{ marginRight: '6px', verticalAlign: 'middle' }} />Test Akışı</h3>
+              <span className="step-count">{steps.length} adım</span>
+            </div>
+            <DroppableFlowCanvas
+              steps={steps}
+              onSelect={(stepId) => setSelectedStep(steps.find(s => s.id === stepId))}
+              onRemove={removeStep}
+              selectedStep={selectedStep}
+            />
+          </div>
+
+          <div className="config-panel card">
+            <h3><Edit size={16} style={{ marginRight: '6px', verticalAlign: 'middle' }} />Adım Detayları</h3>
+            {renderSelectedStepConfig()}
+          </div>
+        </div>
       </div>
-    </div>
+      <DragOverlay dropAnimation={dropAnimation}>
+        {activeId ? (
+          activeStepForOverlay ? (
+            <SortableStep 
+              step={activeStepForOverlay} 
+              index={steps.findIndex(s => s.id === activeId)}
+              onSelect={() => {}} onRemove={() => {}} isSelected={false} 
+            />
+          ) : activeStepTypeForOverlay ? (
+            <div className="step-type" style={{ pointerEvents: 'none', boxShadow: 'var(--shadow-lg)' }}>
+              <activeStepTypeForOverlay.icon size={20} />
+              <div className="step-type-info">
+                <span className="step-type-name">{activeStepTypeForOverlay.name}</span>
+                <span className="step-type-desc">{activeStepTypeForOverlay.description}</span>
+              </div>
+              <Plus size={16} className="add-icon" />
+            </div>
+          ) : null
+        ) : null}
+      </DragOverlay>
+    </DndContext>
   );
 };
 
