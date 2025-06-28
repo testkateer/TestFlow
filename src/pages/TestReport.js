@@ -242,7 +242,7 @@ const TestReport = () => {
         
         // Sayfa yenilensin ki yeni rapor görülsün
         setTimeout(() => {
-          window.location.reload();
+          navigate(`/report/${id}`, { replace: true });
         }, 1000);
       },
       onError: (result) => {
@@ -252,7 +252,7 @@ const TestReport = () => {
         
         // Sayfa yenilensin ki yeni rapor görülsün
         setTimeout(() => {
-          window.location.reload();
+          navigate(`/report/${id}`, { replace: true });
         }, 1000);
       }
     });

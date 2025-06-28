@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   Calendar, 
   Clock, 
@@ -18,6 +19,8 @@ import { ErrorState, NoDataState } from '../components';
 import '../styles/main.css';
 
 const Dashboard = () => {
+  const navigate = useNavigate();
+  
   // State tanımlamaları
   const [testSummary, setTestSummary] = useState([]);
   const [recentTests, setRecentTests] = useState([]);
@@ -208,12 +211,12 @@ const Dashboard = () => {
 
   // Test raporuna yönlendirme fonksiyonu
   const navigateToTestReport = (testId) => {
-    window.location.href = `/report/${testId}`;
+    navigate(`/report/${testId}`);
   };
 
   // Test editörüne yönlendirme fonksiyonu
   const navigateToTestEditor = (testId) => {
-    window.location.href = `/editor?id=${testId}`;
+    navigate(`/editor?id=${testId}`);
   };
 
   // Veri yoksa boş durum mesajı göster
@@ -266,7 +269,7 @@ const Dashboard = () => {
               </h2>
               <button 
                 className="btn btn-secondary"
-                onClick={() => window.location.href = '/reports'}
+                onClick={() => navigate('/reports')}
               >
                 Tümünü Gör
               </button>
@@ -302,7 +305,7 @@ const Dashboard = () => {
                   action={
                     <button 
                       className="btn btn-primary" 
-                      onClick={() => window.location.href = '/tests'}
+                      onClick={() => navigate('/tests')}
                     >
                       Testlere Git
                     </button>
@@ -323,7 +326,7 @@ const Dashboard = () => {
               </h2>
               <button 
                 className="btn btn-secondary"
-                onClick={() => window.location.href = '/scheduling'}
+                onClick={() => navigate('/scheduling')}
               >
                 Yönet
               </button>
@@ -356,7 +359,7 @@ const Dashboard = () => {
                   action={
                     <button 
                       className="btn btn-primary" 
-                      onClick={() => window.location.href = '/editor'}
+                      onClick={() => navigate('/editor')}
                     >
                       Test Oluştur
                     </button>
