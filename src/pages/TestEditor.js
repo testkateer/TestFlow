@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { 
   Save, 
@@ -26,13 +26,12 @@ import useHistory from '../hooks/useHistory';
 import useKeyboardShortcuts from '../hooks/useKeyboardShortcuts';
 import { exportTestFlow, importTestFlow } from '../utils/testUtils';
 import { runTestWithHandling } from '../utils/testRunner';
-import { getFromStorage, setToStorage, setTempData } from '../utils/storageUtils';
+import { getFromStorage, setTempData } from '../utils/dataUtils';
 import { validateTestFlow } from '../utils/validationUtils';
-import { saveTestReportToStorage } from '../utils/reportUtils';
 import { toast} from '../utils/notifications';
 import '../styles/main.css';
-import { useNotification } from '../contexts/NotificationContext';
 import { useModal } from '../contexts/ModalContext';
+import { useTestFlow } from '../contexts/TestFlowContext';
 
 // Dnd-kit imports
 import {
@@ -55,6 +54,7 @@ import Trash from '../components/TestEditor/Trash';
 const TestEditor = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const { addTestFlow, addTestReport } = useTestFlow();
   
   const {
     state: editorState,
@@ -72,8 +72,7 @@ const TestEditor = () => {
   const [selectedSteps, setSelectedSteps] = useState(new Set()); // For multi-selection
   const [copiedSteps, setCopiedSteps] = useState([]); // For copy/paste functionality
   const [isRunning, setIsRunning] = useState(false);
-  const [testResults, setTestResults] = useState(null);
-  const { showError } = useNotification();
+  // const [testResults, setTestResults] = useState(null); // Kept for future use
   const { showTripleConfirm } = useModal();
   const saveTestFlowRef = useRef();
 
@@ -83,14 +82,14 @@ const TestEditor = () => {
 
   const hasUnsavedChanges = canUndo && (steps.length > 0 || testName.trim() !== 'Yeni Test Senaryosu');
 
-  const stepTypes = [
+  const stepTypes = useMemo(() => [
     { id: 'navigate', name: 'Git', icon: Navigation, description: 'Belirtilen URL ye git' },
     { id: 'click', name: 'Tıkla', icon: MousePointer, description: 'Element üzerine tıkla' },
     { id: 'input', name: 'Metin Gir', icon: Type, description: 'Alana metin gir' },
     { id: 'wait', name: 'Bekle', icon: Clock, description: 'Belirtilen süre bekle' },
     { id: 'verify', name: 'Doğrula', icon: Eye, description: 'Element varlığını doğrula' },
     { id: 'refresh', name: 'Yenile', icon: RefreshCw, description: 'Sayfayı yenile' }
-  ];
+  ], []);
 
   const activeStepForOverlay = steps.find(step => step.id === activeId);
   const activeStepTypeForOverlay = stepTypes.find(st => `draggable-${st.id}` === activeId);
@@ -176,7 +175,7 @@ const TestEditor = () => {
           navigate('/editor', { replace: true });
         }
       } catch (error) {
-        showError('Test tekrar yüklenirken bir hata oluştu.');
+        toast.error('Test tekrar yüklenirken bir hata oluştu.');
       }
     } else if (editTestId) {
       try {
@@ -187,10 +186,10 @@ const TestEditor = () => {
           navigate('/editor', { replace: true });
         }
       } catch (error) {
-        showError('Test düzenlenirken bir hata oluştu.');
+        toast.error('Test düzenlenirken bir hata oluştu.');
       }
     }
-  }, [location.search, navigate, showError, resetEditorState]);
+  }, [location.search, navigate, resetEditorState, stepTypes]);
 
   useEffect(() => {
     const handleBeforeUnload = (event) => {
@@ -385,26 +384,20 @@ const TestEditor = () => {
     }
   };
 
-  const saveTestReport = (testResult) => {
-    const testData = { testName, steps };
-    saveTestReportToStorage(testResult, testData);
-  };
+  // Test raporu kaydetme artık context üzerinden yapılıyor
 
   const runTest = async () => {
     const testData = { testName, steps };
     await runTestWithHandling(testData, {
       onStart: () => {
         setIsRunning(true);
-        setTestResults(null);
         setTempData('testRerun', { testName, steps });
       },
-      onSuccess: (result) => {
-        setTestResults(result);
-        saveTestReport(result);
+      onSuccess: async (result) => {
+        await addTestReport(result);
       },
-      onError: (result) => {
-        setTestResults(result);
-        saveTestReport(result);
+      onError: async (result) => {
+        await addTestReport(result);
       },
       onFinally: () => setIsRunning(false)
     });
@@ -484,32 +477,21 @@ const TestEditor = () => {
     }
 
     try {
-      const savedTests = getFromStorage('savedTestFlows', []);
       const newTest = {
-        id: Date.now(),
         name: testName,
         description: `${steps.length} adımlı test akışı`,
         steps,
-        createdAt: new Date().toISOString()
+        status: 'pending'
       };
       
-      const existingTestIndex = savedTests.findIndex(t => t.id === newTest.id);
-      if(existingTestIndex > -1){
-        savedTests[existingTestIndex] = newTest;
-      } else {
-        savedTests.push(newTest);
-      }
-
-      setToStorage('savedTestFlows', savedTests);
-      toast.saveSuccess(testName);
-      
+      await addTestFlow(newTest);
       resetEditorState({ testName, steps });
       
     } catch (error) {
       toast.error('Test akışı kaydedilirken hata oluştu.');
       console.error("Save error:", error);
     }
-  }, [testName, steps, resetEditorState]);
+  }, [testName, steps, resetEditorState, addTestFlow]);
 
   saveTestFlowRef.current = saveTestFlow;
 

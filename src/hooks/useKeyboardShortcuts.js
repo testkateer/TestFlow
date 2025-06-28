@@ -21,7 +21,7 @@ const useKeyboardShortcuts = (handlers = {}) => {
   } = handlers;
 
   const handleKeyDown = useCallback((event) => {
-    const { key, ctrlKey, metaKey, shiftKey, altKey } = event;
+    const { key, ctrlKey, metaKey, shiftKey } = event;
     const isModifierPressed = ctrlKey || metaKey; // Support both Ctrl (Windows/Linux) and Cmd (Mac)
 
     // Prevent default browser shortcuts when our shortcuts are active

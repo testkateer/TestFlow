@@ -3,7 +3,6 @@ import {
   User, 
   Globe, 
   Monitor, 
-  Camera,
   Bell, 
   Shield, 
   Database,
@@ -20,22 +19,25 @@ import {
 } from 'lucide-react';
 import { toast } from '../utils/notifications';
 import { confirmActions } from '../utils/modalUtils';
+import { exportAllData } from '../utils/dataUtils';
 import { PageHeader } from '../components';
 import ShortcutsSettings from '../components/Settings/ShortcutsSettings';
+import { useTestFlow } from '../contexts/TestFlowContext';
 import '../styles/main.css';
 
 const Settings = () => {
   const [activeTab, setActiveTab] = useState('profile');
   const [showApiKey, setShowApiKey] = useState(false);
+  const { updateSettings } = useTestFlow();
 
   // Settings kaydetme fonksiyonu
-  const handleSaveSettings = () => {
+  const handleSaveSettings = async () => {
     try {
-      // Burada normalde API'ye post edilir, şimdilik localStorage'a kaydedelim
       const settings = {
         // Diğer ayarlar...
+        lastUpdated: new Date().toISOString()
       };
-      localStorage.setItem('userSettings', JSON.stringify(settings));
+      await updateSettings(settings);
       toast.saveSuccess('Ayarlar');
     } catch (error) {
       toast.saveError('Ayarlar');
@@ -47,7 +49,7 @@ const Settings = () => {
     const confirmed = await confirmActions.reset('tüm ayarları');
     if (confirmed) {
       setShowApiKey(false);
-      localStorage.removeItem('userSettings');
+      await updateSettings({});
       toast.saveSuccess('Ayarlar sıfırlandı');
     }
   };
@@ -55,11 +57,7 @@ const Settings = () => {
   // Veri dışa aktarma
   const handleExportData = () => {
     try {
-      const data = {
-        tests: JSON.parse(localStorage.getItem('savedTestFlows') || '[]'),
-        reports: JSON.parse(localStorage.getItem('testReports') || '[]'),
-        settings: JSON.parse(localStorage.getItem('userSettings') || '{}')
-      };
+      const data = exportAllData();
       
       const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);

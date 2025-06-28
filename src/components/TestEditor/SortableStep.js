@@ -1,7 +1,7 @@
 import React from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { Trash2, Edit } from 'lucide-react';
+// Removed unused imports
 
 const SortableStep = ({ step, onSelect, onRemove, isSelected, isMultiSelected = false, index, isDragOverlay = false }) => {
   const {

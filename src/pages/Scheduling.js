@@ -12,12 +12,20 @@ import {
   BarChart3
 } from 'lucide-react';
 import { PageHeader } from '../components';
+import { useTestFlow } from '../contexts/TestFlowContext';
 import '../styles/main.css';
 
 const Scheduling = () => {
+  const { 
+    scheduledTests, 
+    testFlows, 
+    updateScheduledTest
+  } = useTestFlow();
+  
   const [activeTab, setActiveTab] = useState('scheduled');
 
-  const scheduledTests = [
+  // Mock data - gerçek scheduled tests yoksa
+  const mockScheduledTests = scheduledTests.length > 0 ? scheduledTests : [
     {
       id: 1,
       testName: 'Login Flow Test',
@@ -74,7 +82,11 @@ const Scheduling = () => {
     { name: 'Hafta sonları 10:00', expression: '0 10 * * 6,0' }
   ];
 
-  const toggleSchedule = (scheduleId) => {
+  const toggleSchedule = async (scheduleId) => {
+    const schedule = mockScheduledTests.find(s => s.id === scheduleId);
+    if (schedule) {
+      await updateScheduledTest(scheduleId, { isActive: !schedule.isActive });
+    }
   };
 
   return (
@@ -134,7 +146,7 @@ const Scheduling = () => {
           </div>
 
           <div className="schedules-list">
-            {scheduledTests.map((schedule) => (
+            {mockScheduledTests.map((schedule) => (
               <div key={schedule.id} className="schedule-card card">
                 <div className="schedule-header">
                   <div className="schedule-info">
@@ -218,10 +230,10 @@ const Scheduling = () => {
               <div className="form-group">
                 <label>Test Senaryosu:</label>
                 <select>
-                  <option>Login Flow Test</option>
-                  <option>E-commerce Checkout</option>
-                  <option>API Health Check</option>
-                  <option>User Registration</option>
+                  <option value="">Test seçin...</option>
+                  {testFlows.map(test => (
+                    <option key={test.id} value={test.id}>{test.name}</option>
+                  ))}
                 </select>
               </div>
             </div>

@@ -5,60 +5,33 @@ import {
   CheckCircle,
   XCircle,
   AlertCircle,
-  Download,
   BarChart3,
   X
 } from 'lucide-react';
-import { downloadTestReport } from '../utils/reportUtils';
-import { getFromStorage } from '../utils/storageUtils';
+import { downloadTestReport } from '../utils/dataUtils';
 import { isToday, isThisWeek } from '../utils/dateUtils';
 import { NoDataState, PageHeader } from '../components';
-import { useNotification } from '../contexts/NotificationContext';
+import { useTestFlow } from '../contexts/TestFlowContext';
 import { toast } from '../utils/notifications';
 import '../styles/main.css';
 
 const Reports = () => {
   const navigate = useNavigate();
-  const { showError, showSuccess } = useNotification();
+  const { testReports: reportsList } = useTestFlow();
+  
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterDate, setFilterDate] = useState('all');
-  const [reportsList, setReportsList] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(25); // Varsayılan 25
 
-  // Test raporlarını localStorage'dan yükle - storage utility kullan
+  // Veri yükleme artık TestFlowContext tarafından yapılıyor
   useEffect(() => {
-    const loadReports = () => {
-      try {
-        const savedReports = getFromStorage('testReports', []);
-        setReportsList(savedReports);
-        
-        // İlk yükleme sırasında rapor sayısını bildir
-        if (savedReports.length === 0) {
-          toast.info('Henüz test raporu bulunmuyor');
-        }
-      } catch (error) {
-        console.error('Raporlar yüklenirken hata oluştu:', error);
-        showError('Raporlar yüklenirken bir hata oluştu');
-        setReportsList([]);
-      }
-    };
-
-    loadReports();
-    
-    // Storage event listener ekle (farklı sekmelerde değişiklikleri dinlemek için)
-    const handleStorageChange = () => {
-      loadReports();
-    };
-    
-    window.addEventListener('storage', handleStorageChange);
-    
-    // Cleanup
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-    };
-  }, []);
+    // İlk yükleme sırasında rapor sayısını bildir
+    if (reportsList.length === 0) {
+      toast.info('Henüz test raporu bulunmuyor');
+    }
+  }, [reportsList.length]);
 
   const getStatusIcon = (status) => {
     switch (status) {
@@ -97,6 +70,9 @@ const Reports = () => {
           const monthAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
           matchesDate = reportDate >= monthAgo;
           break;
+        default:
+          matchesDate = true;
+          break;
       }
     }
     
@@ -132,11 +108,11 @@ const Reports = () => {
         navigate(`/report/${reportId}`);
         toast.info(`"${report.testName || 'Test'}" raporu açılıyor`);
       } else {
-        showError('Rapor bulunamadı');
+        toast.error('Rapor bulunamadı');
       }
     } catch (error) {
       console.error('Rapor açma hatası:', error);
-      showError('Rapor açılırken bir hata oluştu');
+      toast.error('Rapor açılırken bir hata oluştu');
     }
   };
 
@@ -146,7 +122,7 @@ const Reports = () => {
       toast.success(`"${report.testName || 'Test'}" raporu indirildi`);
     } catch (error) {
       console.error('Rapor indirme hatası:', error);
-      showError('Rapor indirilirken bir hata oluştu');
+      toast.reportDownloadError();
     }
   };
 

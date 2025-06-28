@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   Calendar, 
@@ -6,93 +6,63 @@ import {
   PlayCircle,
   CheckCircle,
   XCircle,
-  AlertCircle,
   BarChart3,
   Percent
 } from 'lucide-react';
-import { getFromStorage} from '../utils/storageUtils';
-import { clearExpiredRunningTests } from '../utils/testRunner';
 import { getStatusIcon, getStatusText } from '../utils/statusUtils';
 import { formatRelativeTime } from '../utils/dateUtils';
 import { ErrorState, NoDataState, PageHeader } from '../components';
+import { useTestFlow } from '../contexts/TestFlowContext';
 import '../styles/main.css';
 
 const Dashboard = () => {
   const navigate = useNavigate();
+  const { 
+    testFlows, 
+    testReports, 
+    activeRunningTests,
+    getTestStats,
+    isLoading, 
+    error 
+  } = useTestFlow();
   
-  // State tanımlamaları
+  // Local state for computed values
   const [testSummary, setTestSummary] = useState([]);
   const [recentTests, setRecentTests] = useState([]);
-  const [scheduledTests, setScheduledTests] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [runningTestsCount, setRunningTestsCount] = useState(0);
 
-  // Gerçek zamanlı çalışan testleri takip et
-  const checkRunningTests = () => {
+  // Computed values from context data
+  const loadTestSummaryFromContext = useCallback(() => {
     try {
-      // Süresi geçmiş testleri temizle ve güncel sayıyı al
-      const currentRunningCount = clearExpiredRunningTests();
-      setRunningTestsCount(currentRunningCount);
-      return currentRunningCount;
-    } catch (error) {
-      console.error('Çalışan testleri kontrol etme hatası:', error);
-      return 0;
-    }
-  };
-
-  // Gerçek veri yükleme fonksiyonları - storage utility kullan
-  const loadTestSummaryFromStorage = () => {
-    try {
-      const testReports = getFromStorage('testReports', []);
-      const savedTests = getFromStorage('savedTestFlows', []);
-      
-      // Son 30 güne ait raporları al
-      const thirtyDaysAgo = new Date();
-      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-      
-      const recentReports = testReports.filter(report => {
-        const reportDate = new Date(report.timestamp || report.date);
-        return reportDate >= thirtyDaysAgo;
-      });
-      
-      // Başarılı ve başarısız testleri hesapla
-      const totalTests = recentReports.length; // Çalıştırılan toplam test sayısı
-      const successfulTests = recentReports.filter(report => report.status === 'success').length;
-      const failedTests = recentReports.filter(report => report.status === 'error').length;
-      const currentRunningTests = checkRunningTests(); // Gerçek zamanlı çalışan testler
-      
-      // Başarı oranını hesapla
-      const successRate = totalTests > 0 ? Math.round((successfulTests / totalTests) * 100) : 0;
+      const stats = getTestStats();
       
       return [
         { 
           label: 'Toplam Test', 
-          value: totalTests.toString(),
+          value: stats.total.toString(),
           icon: <BarChart3 size={20} />,
           className: ''
         },
         { 
           label: 'Başarılı', 
-          value: successfulTests.toString(),
+          value: stats.successful.toString(),
           icon: <CheckCircle size={20} />,
           className: 'success'
         },
         { 
           label: 'Başarısız', 
-          value: failedTests.toString(),
+          value: stats.failed.toString(),
           icon: <XCircle size={20} />,
           className: 'error'
         },
         { 
           label: 'Başarı Oranı', 
-          value: `${successRate}`,
+          value: `${stats.successRate}`,
           icon: <Percent size={20} />,
           className: 'rate'
         },
         { 
           label: 'Çalışıyor', 
-          value: currentRunningTests.toString(),
+          value: activeRunningTests.length.toString(),
           icon: <PlayCircle size={20} />,
           className: 'running'
         }
@@ -101,12 +71,10 @@ const Dashboard = () => {
       console.error('Test özeti yükleme hatası:', error);
       return [];
     }
-  };
+  }, [getTestStats, activeRunningTests]);
 
-  const loadRecentTestsFromStorage = () => {
+  const loadRecentTestsFromContext = useCallback(() => {
     try {
-      const testReports = getFromStorage('testReports', []);
-      
       // En son 5 test raporunu al ve tarih sırasına göre sırala
       return testReports
         .sort((a, b) => new Date(b.timestamp || b.date) - new Date(a.timestamp || a.date))
@@ -122,12 +90,10 @@ const Dashboard = () => {
       console.error('Son testler yükleme hatası:', error);
       return [];
     }
-  };
+  }, [testReports]);
 
-  const loadScheduledTestsFromStorage = () => {
+  const loadScheduledTestsFromContext = () => {
     try {
-      const savedTests = getFromStorage('savedTestFlows', []);
-      
       // Kaydedilmiş testleri planlanmış testler olarak göster
       // (Gerçek zamanlama sistemi olmadığı için mock bir yaklaşım)
       const scheduleTypes = ['Günlük', 'Haftalık', 'Saatlik', 'Aylık', 'Tekrar'];
@@ -141,7 +107,7 @@ const Dashboard = () => {
         'Çarşamba 16:00'
       ];
       
-      return savedTests.slice(0, 5).map((test, index) => ({
+      return testFlows.slice(0, 5).map((test, index) => ({
         id: test.id,
         name: test.name,
         nextRun: nextRunTimes[index % nextRunTimes.length],
@@ -153,60 +119,16 @@ const Dashboard = () => {
     }
   };
 
-  // Tüm verileri yükle
-  const loadDashboardData = async () => {
-    try {
-      setIsLoading(true);
-      setError(null);
-      
-      const summaryData = loadTestSummaryFromStorage();
-      const recentData = loadRecentTestsFromStorage();
-      const scheduledData = loadScheduledTestsFromStorage();
+  // Update computed values when context data changes
+  useEffect(() => {
+    if (!isLoading && !error) {
+      const summaryData = loadTestSummaryFromContext();
+      const recentData = loadRecentTestsFromContext();
       
       setTestSummary(summaryData);
       setRecentTests(recentData);
-      setScheduledTests(scheduledData);
-    } catch (err) {
-      setError('Veriler yüklenirken bir hata oluştu');
-      console.error('Dashboard veri yükleme hatası:', err);
-    } finally {
-      setIsLoading(false);
     }
-  };
-
-  // Component mount olduğunda verileri yükle
-  useEffect(() => {
-    loadDashboardData();
-    
-    // localStorage değişikliklerini dinle (diğer sekmelerdeki değişiklikleri yakala)
-    const handleStorageChange = () => {
-      loadDashboardData();
-    };
-    
-    window.addEventListener('storage', handleStorageChange);
-    
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-    };
-  }, []);
-
-  // Otomatik yenileme için ayrı useEffect
-  useEffect(() => {
-    // Çalışan testleri daha sık kontrol et (her 5 saniyede bir)
-    const runningTestsInterval = setInterval(() => {
-      checkRunningTests();
-    }, 5 * 1000);
-    
-    // Genel dashboard verilerini yenile (her 30 saniyede bir)
-    const refreshInterval = setInterval(() => {
-      loadDashboardData();
-    }, 30 * 1000);
-    
-    return () => {
-      clearInterval(runningTestsInterval);
-      clearInterval(refreshInterval);
-    };
-  }, []);
+  }, [testFlows, testReports, activeRunningTests, isLoading, error, loadRecentTestsFromContext, loadTestSummaryFromContext]);
 
   // Test raporuna yönlendirme fonksiyonu
   const navigateToTestReport = (testId) => {
@@ -218,8 +140,10 @@ const Dashboard = () => {
     navigate(`/editor?id=${testId}`);
   };
 
-  // Veri yoksa boş durum mesajı göster
-  const hasData = testSummary.length > 0 || recentTests.length > 0 || scheduledTests.length > 0;
+  // Veri yoksa boş durum mesajı göster - currently not used but kept for future use
+  // const hasData = testSummary.length > 0 || recentTests.length > 0 || scheduledTests.length > 0;
+
+
 
   if (error) {
     return (
@@ -330,8 +254,8 @@ const Dashboard = () => {
               </button>
             </div>
             <div className="scheduled-list">
-              {scheduledTests.length > 0 ? (
-                scheduledTests.map((test) => (
+              {testFlows.length > 0 ? (
+                loadScheduledTestsFromContext().map((test) => (
                   <div 
                     key={test.id} 
                     className="scheduled-item clickable animate-on-hover"

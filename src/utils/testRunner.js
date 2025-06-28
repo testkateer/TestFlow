@@ -330,53 +330,22 @@ export const analyzeTestResults = (results) => {
   };
 };
 
-// Aktif çalışan testleri yönetme fonksiyonları
+// Bu fonksiyonlar artık TestFlowContext tarafından yönetiliyor
+// Geriye dönük uyumluluk için basit wrapper'lar
 export const addActiveRunningTest = (testId, testName) => {
-  try {
-    const activeTests = JSON.parse(localStorage.getItem('activeRunningTests') || '[]');
-    const newTest = { id: testId, name: testName, timestamp: Date.now() };
-    activeTests.push(newTest);
-    localStorage.setItem('activeRunningTests', JSON.stringify(activeTests));
-  } catch (error) {
-    console.error('Aktif test ekleme hatası:', error);
-  }
+  console.warn('addActiveRunningTest deprecated - use TestFlowContext.addRunningTest instead');
 };
 
 export const removeActiveRunningTest = (testId) => {
-  try {
-    const activeTests = JSON.parse(localStorage.getItem('activeRunningTests') || '[]');
-    const filteredTests = activeTests.filter(test => test.id !== testId);
-    
-    localStorage.setItem('activeRunningTests', JSON.stringify(filteredTests));
-  } catch (error) {
-    console.error('Aktif test kaldırma hatası:', error);
-  }
+  console.warn('removeActiveRunningTest deprecated - use TestFlowContext.removeRunningTest instead');
 };
 
 export const getActiveRunningTests = () => {
-  try {
-    return JSON.parse(localStorage.getItem('activeRunningTests') || '[]');
-  } catch (error) {
-    console.error('Aktif testleri alma hatası:', error);
-    return [];
-  }
+  console.warn('getActiveRunningTests deprecated - use TestFlowContext.activeRunningTests instead');
+  return [];
 };
 
 export const clearExpiredRunningTests = () => {
-  try {
-    const activeTests = getActiveRunningTests();
-    const now = new Date();
-    
-    const validTests = activeTests.filter(test => {
-      const testStartTime = new Date(test.startTime);
-      const diffMinutes = (now - testStartTime) / (1000 * 60);
-      return diffMinutes < 5; // 5 dakikadan eski testleri temizle
-    });
-    
-    localStorage.setItem('activeRunningTests', JSON.stringify(validTests));
-    return validTests.length;
-  } catch (error) {
-    console.error('Süresi geçmiş testleri temizleme hatası:', error);
-    return 0;
-  }
+  console.warn('clearExpiredRunningTests deprecated - use TestFlowContext.clearExpiredRunningTests instead');
+  return 0;
 }; 

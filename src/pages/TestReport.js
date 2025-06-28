@@ -17,11 +17,10 @@ import {
   RefreshCw,
   ClipboardList,
 } from 'lucide-react';
-import { downloadTestReport, saveTestReportToStorage } from '../utils/reportUtils';
+import { downloadTestReport, setTempData } from '../utils/dataUtils';
 import { runTestWithHandling } from '../utils/testRunner';
-import { setTempData } from '../utils/storageUtils';
 import { toast } from '../utils/notifications';
-import { useNotification } from '../contexts/NotificationContext';
+import { useTestFlow } from '../contexts/TestFlowContext';
 import { getStatusIcon } from '../utils/statusUtils';
 import { LoadingState, ErrorState } from '../components';
 import '../styles/main.css';
@@ -29,7 +28,7 @@ import '../styles/main.css';
 const TestReport = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { showError, showWarning } = useNotification();
+  const { getReportById, addTestReport } = useTestFlow();
   const [activeTab, setActiveTab] = useState('overview');
   const [testDetails, setTestDetails] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -37,8 +36,7 @@ const TestReport = () => {
   useEffect(() => {
     const loadTestReport = () => {
       try {
-        const savedReports = JSON.parse(localStorage.getItem('testReports') || '[]');
-        const report = savedReports.find(r => r.id.toString() === id);
+        const report = getReportById(parseInt(id));
 
         if (report) {
           // Rapor verisini TestReport formatına çevir
@@ -75,13 +73,12 @@ const TestReport = () => {
     } else {
       setLoading(false);
     }
-  }, [id]);
+  }, [id, getReportById]);
 
   // Gerçek test verilerinden stepDetails oluştur
   const getStepDetailsFromReport = () => {
     try {
-      const savedReports = JSON.parse(localStorage.getItem('testReports') || '[]');
-      const report = savedReports.find(r => r.id.toString() === id);
+      const report = getReportById(parseInt(id));
 
       if (report && report.results) {
         return report.results.map((result, index) => ({
@@ -122,10 +119,12 @@ const TestReport = () => {
   // Execution history'yi bu test için gerçek verilerden oluştur
   const getExecutionHistory = () => {
     try {
-      const savedReports = JSON.parse(localStorage.getItem('testReports') || '[]');
-      const currentTestReports = savedReports.filter(r => r.testName === testDetails?.name);
+      const report = getReportById(parseInt(id));
+      if (!report) return [];
 
-      return currentTestReports.slice(0, 5).map((report, index) => ({
+      // Aynı test için tüm raporları bul
+      // Bu basit implementasyon - gelecekte test ID'ye göre filtrelenebilir
+      return [report].slice(0, 5).map((report, index) => ({
         id: report.id,
         date: `${report.date} ${report.time}`,
         status: report.status,
@@ -166,19 +165,17 @@ const TestReport = () => {
 
   const handleDownloadReport = () => {
     try {
-      // localStorage'dan orijinal rapor verisini al
-      const savedReports = JSON.parse(localStorage.getItem('testReports') || '[]');
-      const originalReport = savedReports.find(r => r.id.toString() === id);
+      const originalReport = getReportById(parseInt(id));
 
       if (originalReport) {
         downloadTestReport(originalReport);
         toast.success(`"${originalReport.testName || 'Test'}" raporu başarıyla indirildi`);
       } else {
-        showError('Rapor verisi bulunamadı.');
+        toast.error('Rapor verisi bulunamadı.');
       }
     } catch (error) {
       console.error('Rapor indirme hatası:', error);
-      showError('Rapor indirilirken bir hata oluştu.');
+      toast.reportDownloadError();
     }
   };
 
@@ -194,9 +191,7 @@ const TestReport = () => {
   // Rapordaki test verisini editTest için uygun formata çevir
   const handleEditTest = () => {
     try {
-      // localStorage'dan orijinal rapor verisini al
-      const savedReports = JSON.parse(localStorage.getItem('testReports') || '[]');
-      const originalReport = savedReports.find(r => r.id.toString() === id);
+      const originalReport = getReportById(parseInt(id));
 
       if (originalReport && originalReport.results && originalReport.results.length > 0) {
         // Test verisini TestList formatına çevir
@@ -218,12 +213,12 @@ const TestReport = () => {
 
         // Standardize edilmiş editTest fonksiyonunu kullan
         editTest(testData);
-      } else {
-        showWarning('Test adımları bulunamadı. Test düzenlenemiyor.');
-      }
+              } else {
+          toast.warning('Test adımları bulunamadı. Test düzenlenemiyor.');
+        }
     } catch (error) {
       console.error('Test düzenleme hatası:', error);
-      showError('Test düzenlenirken bir hata oluştu.');
+      toast.error('Test düzenlenirken bir hata oluştu.');
     }
   };
 
@@ -233,20 +228,20 @@ const TestReport = () => {
       onStart: () => {
         // Başlatma bildirimi runTestWithHandling tarafından gösterilecek
       },
-      onSuccess: (result) => {
+      onSuccess: async (result) => {
         // Başarı bildirimi runTestWithHandling tarafından gösterilecek
         
         // Test sonucunu Reports sayfası için kaydet
-        saveTestReportToStorage(result, testData);
+        await addTestReport(result);
         
         // Sayfa yenilensin ki yeni rapor görülsün
         setTimeout(() => {
           navigate(`/report/${id}`, { replace: true });
         }, 1000);
       },
-      onError: (result) => {
+      onError: async (result) => {
         // Hata durumunda test raporunu kaydet
-        saveTestReportToStorage(result, testData);
+        await addTestReport(result);
         // Hata bildirimi runTestWithHandling tarafından gösterilecek
         
         // Sayfa yenilensin ki yeni rapor görülsün
@@ -260,9 +255,7 @@ const TestReport = () => {
   // Rapordaki test verisini runTest için uygun formata çevir
   const handleRunTest = async () => {
     try {
-      // localStorage'dan orijinal rapor verisini al
-      const savedReports = JSON.parse(localStorage.getItem('testReports') || '[]');
-      const originalReport = savedReports.find(r => r.id.toString() === id);
+      const originalReport = getReportById(parseInt(id));
 
       if (originalReport && originalReport.results && originalReport.results.length > 0) {
         // Test verilerini TestList formatına çevir
@@ -279,11 +272,11 @@ const TestReport = () => {
         // Standardize edilmiş runTest fonksiyonunu kullan
         await runTest(testData);
       } else {
-        showWarning('Test adımları bulunamadı. Test çalıştırılamıyor.');
+        toast.warning('Test adımları bulunamadı. Test çalıştırılamıyor.');
       }
     } catch (error) {
       console.error('Test çalıştırma hatası:', error);
-      showError('Test çalıştırılırken bir hata oluştu.');
+      toast.error('Test çalıştırılırken bir hata oluştu.');
     }
   };
 

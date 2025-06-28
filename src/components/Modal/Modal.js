@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { X } from 'lucide-react';
 import { createPortal } from 'react-dom';
 import '../../styles/main.css';
@@ -8,6 +8,18 @@ const Modal = ({ modal, onClose }) => {
   const [isRemoving, setIsRemoving] = useState(false);
   const modalRef = useRef();
   const previousFocusRef = useRef();
+
+  const handleClose = useCallback(() => {
+    if (isRemoving) return;
+    
+    setIsRemoving(true);
+    setTimeout(() => {
+      if (modal.onClose) {
+        modal.onClose();
+      }
+      onClose(modal.id);
+    }, 200);
+  }, [isRemoving, modal, onClose]);
 
   useEffect(() => {
     // Store current focused element
@@ -48,19 +60,7 @@ const Modal = ({ modal, onClose }) => {
     return () => {
       document.removeEventListener('keydown', handleEsc);
     };
-  }, [isVisible, modal.closeOnEsc]);
-
-  const handleClose = () => {
-    if (isRemoving) return;
-    
-    setIsRemoving(true);
-    setTimeout(() => {
-      if (modal.onClose) {
-        modal.onClose();
-      }
-      onClose(modal.id);
-    }, 200);
-  };
+  }, [isVisible, modal.closeOnEsc, handleClose]);
 
   const handleOverlayClick = (e) => {
     if (e.target === e.currentTarget && modal.closeOnOverlay !== false) {

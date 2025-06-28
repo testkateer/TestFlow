@@ -19,59 +19,37 @@ import {
 } from 'lucide-react';
 import { exportTestFlow, importTestFlow } from '../utils/testUtils';
 import { runTestWithHandling } from '../utils/testRunner';
-import { getFromStorage, setToStorage,  setTempData } from '../utils/storageUtils';
+import { setTempData, calculateTestDuration } from '../utils/dataUtils';
 import { getStatusText, getBrowserIcon } from '../utils/statusUtils';
 import { formatDateTime} from '../utils/dateUtils';
-import { saveTestReportToStorage, calculateTestDuration } from '../utils/reportUtils';
 import { toast } from '../utils/notifications';
 import { confirmActions, modal, confirm } from '../utils/modalUtils';
 import { LoadingState, ErrorState, NoDataState, PageHeader } from '../components';
+import { useTestFlow } from '../contexts/TestFlowContext';
 import '../styles/main.css';
 
 const TestList = () => {
   const navigate = useNavigate();
+  const { 
+    testFlows: tests, 
+    isLoading, 
+    error, 
+    updateTestFlow,
+    deleteTestFlow,
+    addTestFlow,
+    addTestReport
+  } = useTestFlow();
+  
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterBrowser, setFilterBrowser] = useState('all');
-  const [tests, setTests] = useState([]);
   const [openDropdownId, setOpenDropdownId] = useState(null);
   const [runningTests, setRunningTests] = useState(new Set());
   const [selectedTests, setSelectedTests] = useState(new Set());
   const [isMultiSelectMode, setIsMultiSelectMode] = useState(false);
   const [showFavorites, setShowFavorites] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
 
-  // Kaydedilmiş testleri yükle - storage utility kullan
-  useEffect(() => {
-    const loadSavedTests = () => {
-      try {
-        setIsLoading(true);
-        setError(null);
-        const savedTests = getFromStorage('savedTestFlows', []);
-        setTests(savedTests);
-      } catch (err) {
-        setError('Test akışlarını yüklerken bir hata oluştu');
-        console.error('Test yükleme hatası:', err);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    loadSavedTests();
-    
-    // Storage event listener ekle (farklı sekmelerde değişiklikleri dinlemek için)
-    const handleStorageChange = () => {
-      loadSavedTests();
-    };
-    
-    window.addEventListener('storage', handleStorageChange);
-    
-    // Cleanup
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-    };
-  }, []);
+  // Veri yükleme artık TestFlowContext tarafından yapılıyor
 
   // Dropdown dışına tıklandığında kapat
   useEffect(() => {
@@ -87,17 +65,14 @@ const TestList = () => {
 
   // getBrowserIcon artık utility'den geldi, yerel fonksiyonu kaldır
 
-  // Test silme işlevi - storage utility kullan
+  // Test silme işlevi - context kullan
   const deleteTest = async (testId) => {
     const testName = tests.find(test => test.id === testId)?.name || 'akışı';
     const confirmed = await confirmActions.delete(testName);
     
     if (confirmed) {
-      const updatedTests = tests.filter(test => test.id !== testId);
-      setTests(updatedTests);
-      setToStorage('savedTestFlows', updatedTests);
+      await deleteTestFlow(testId);
       setOpenDropdownId(null);
-      toast.deleteSuccess(testName);
     }
   };
 
@@ -111,49 +86,37 @@ const TestList = () => {
     const testData = { testName: test.name, steps: test.steps };
     
     await runTestWithHandling(testData, {
-      onStart: () => {
+      onStart: async () => {
         setRunningTests(prev => new Set([...prev, test.id]));
         
         // Test durumunu güncelle
-        const updatedTest = { ...test, status: 'running' };
-        const updatedTests = tests.map(t => t.id === test.id ? updatedTest : t);
-        setTests(updatedTests);
+        await updateTestFlow(test.id, { status: 'running' });
         
         // Başlatma bildirimi runTestWithHandling tarafından gösterilecek
       },
-      onSuccess: (result) => {
+      onSuccess: async (result) => {
         // Test sonucunu Reports sayfası için kaydet
-        saveTestReport(result, test);
+        await addTestReport(result);
         
         // Test durumunu güncelle
-        const finalTest = {
-          ...test,
+        await updateTestFlow(test.id, {
           status: 'success',
           lastRun: formatDateTime(new Date()),
           duration: calculateTestDuration(result)
-        };
-
-        const finalTests = tests.map(t => t.id === test.id ? finalTest : t);
-        setTests(finalTests);
-        setToStorage('savedTestFlows', finalTests);
+        });
         
         // Başarı bildirimi runTestWithHandling tarafından gösterilecek
       },
-      onError: (result) => {
+      onError: async (result) => {
         // Hata durumunda test raporunu kaydet
-        saveTestReport(result, test);
+        await addTestReport(result);
         
         // Test durumunu güncelle
-        const errorResult = {
-          ...test,
+        await updateTestFlow(test.id, {
           status: 'error',
           lastRun: formatDateTime(new Date()),
           duration: calculateTestDuration(result) // Gerçek süreyi hesapla
-        };
-
-        const finalTests = tests.map(t => t.id === test.id ? errorResult : t);
-        setTests(finalTests);
-        setToStorage('savedTestFlows', finalTests);
+        });
         
         // Hata bildirimi runTestWithHandling tarafından gösterilecek
       },
@@ -167,11 +130,7 @@ const TestList = () => {
     });
   };
 
-  // Test raporu kaydetme - ortak utility kullan
-  const saveTestReport = (testResult, test) => {
-    const testData = { testName: test.name, steps: test.steps };
-    saveTestReportToStorage(testResult, testData);
-  };
+  // saveTestReport artık kullanılmıyor - context üzerinden addTestReport kullanılıyor
 
   // calculateTestDuration artık reportUtils'de, yerel fonksiyonu kaldır
 
@@ -204,7 +163,7 @@ const TestList = () => {
   };
 
   // Test kopyalama işlevi
-  const copyTest = (test) => {
+  const copyTest = async (test) => {
     try {
       // Yeni ID oluştur
       const newId = Date.now().toString();
@@ -223,10 +182,8 @@ const TestList = () => {
         createdAt: new Date().toISOString() // Yeni oluşturma tarihi
       };
       
-      // Mevcut testlere ekle
-      const updatedTests = [...tests, copiedTest];
-      setTests(updatedTests);
-      setToStorage('savedTestFlows', updatedTests);
+      // Context'e ekle
+      await addTestFlow(copiedTest);
       
       setOpenDropdownId(null);
       toast.saveSuccess(`${test.name} kopyalandı`);
@@ -243,19 +200,14 @@ const TestList = () => {
   };
 
   // Favori test işlemleri
-  const toggleFavorite = (testId) => {
-    const updatedTests = tests.map(test => {
-      if (test.id === testId) {
-        return { ...test, isFavorite: !test.isFavorite };
-      }
-      return test;
-    });
-    
-    setTests(updatedTests);
-    setToStorage('savedTestFlows', updatedTests);
-    
+  const toggleFavorite = async (testId) => {
     const test = tests.find(t => t.id === testId);
-    const action = test.isFavorite ? 'favorilerden çıkarıldı' : 'favorilere eklendi';
+    if (!test) return;
+    
+    const newFavoriteStatus = !test.isFavorite;
+    await updateTestFlow(testId, { isFavorite: newFavoriteStatus });
+    
+    const action = newFavoriteStatus ? 'favorilere eklendi' : 'favorilerden çıkarıldı';
     toast.saveSuccess(`${test.name} ${action}`);
   };
 
@@ -286,9 +238,10 @@ const TestList = () => {
     
     const confirmed = await confirmActions.delete(`${selectedTests.size} test`);
     if (confirmed) {
-      const updatedTests = tests.filter(test => !selectedTests.has(test.id));
-      setTests(updatedTests);
-      setToStorage('savedTestFlows', updatedTests);
+      // Seçilen testleri sil
+      for (const testId of selectedTests) {
+        await deleteTestFlow(testId);
+      }
       toast.deleteSuccess(`${selectedTests.size} test silindi`);
       clearSelection();
     }
@@ -316,14 +269,13 @@ const TestList = () => {
     }
   };
 
-  const bulkCopy = () => {
+  const bulkCopy = async () => {
     if (selectedTests.size === 0) return;
     
     try {
       const selectedTestsData = tests.filter(test => selectedTests.has(test.id));
-      const copiedTests = [];
       
-      selectedTestsData.forEach(test => {
+      for (const test of selectedTestsData) {
         const newId = Date.now().toString() + Math.random().toString(36).substr(2, 9);
         const copyName = `${test.name} - Kopya`;
         
@@ -337,12 +289,8 @@ const TestList = () => {
           createdAt: new Date().toISOString()
         };
         
-        copiedTests.push(copiedTest);
-      });
-      
-      const updatedTests = [...tests, ...copiedTests];
-      setTests(updatedTests);
-      setToStorage('savedTestFlows', updatedTests);
+        await addTestFlow(copiedTest);
+      }
       
       toast.saveSuccess(`${selectedTests.size} test kopyalandı`);
       clearSelection();
@@ -427,10 +375,9 @@ const TestList = () => {
         
         // Çakışmayan testleri direkt içeri aktar
         if (nonConflictingTests.length > 0) {
-          const updatedTests = [...tests, ...nonConflictingTests];
-          setTests(updatedTests);
-          setToStorage('savedTestFlows', updatedTests);
-          
+          for (const test of nonConflictingTests) {
+            await addTestFlow(test);
+          }
           toast.saveSuccess(`${nonConflictingTests.length} test içeri aktarıldı`);
         }
         
@@ -477,20 +424,11 @@ const TestList = () => {
       
       if (action === true) {
         // Üzerine yaz
-        const updatedTests = tests.map(t => {
-          if (t.id === existingTest.id) {
-            return {
-              ...t,
-              steps: test.steps,
-              browser: test.browser,
-              updatedAt: new Date().toISOString()
-            };
-          }
-          return t;
+        await updateTestFlow(existingTest.id, {
+          steps: test.steps,
+          browser: test.browser,
+          updatedAt: new Date().toISOString()
         });
-        
-        setTests(updatedTests);
-        setToStorage('savedTestFlows', updatedTests);
         toast.saveSuccess(`"${test.name}" testi güncellendi`);
       } else if (action === false) {
         // Yeni isimle kaydet
@@ -506,9 +444,7 @@ const TestList = () => {
           browser: test.browser
         };
         
-        const updatedTests = [...tests, newTest];
-        setTests(updatedTests);
-        setToStorage('savedTestFlows', updatedTests);
+        await addTestFlow(newTest);
         toast.saveSuccess(`"${newName}" testi oluşturuldu`);
       }
       // Eğer modal kapatılırsa hiçbir şey yapma
@@ -580,22 +516,14 @@ const TestList = () => {
       // Tek bir çakışmayı çözme fonksiyonu
       const handleSingleConflict = async (test, action) => {
         const existingTest = tests.find(t => t.name.toLowerCase() === test.name.toLowerCase());
-        let updatedTests = [...tests];
         
         if (action === 'overwrite') {
           // Üzerine yaz
-          updatedTests = tests.map(t => {
-            if (t.id === existingTest.id) {
-              return {
-                ...t,
-                steps: test.steps,
-                browser: test.browser,
-                updatedAt: new Date().toISOString()
-              };
-            }
-            return t;
+          await updateTestFlow(existingTest.id, {
+            steps: test.steps,
+            browser: test.browser,
+            updatedAt: new Date().toISOString()
           });
-          
           toast.saveSuccess(`"${test.name}" testi güncellendi`);
         } else if (action === 'rename') {
           // Yeni isimle kaydet
@@ -611,16 +539,12 @@ const TestList = () => {
             browser: test.browser
           };
           
-          updatedTests = [...tests, newTest];
+          await addTestFlow(newTest);
           toast.saveSuccess(`"${newName}" testi oluşturuldu`);
         } else if (action === 'skip') {
           // Atla - hiçbir şey yapma
           toast.info(`"${test.name}" testi atlandı`);
         }
-        
-        // Testleri güncelle
-        setTests(updatedTests);
-        setToStorage('savedTestFlows', updatedTests);
         
         // Çakışan testi listeden kaldır
         const updatedConflictingTests = conflictingTests.filter(t => 
@@ -635,49 +559,37 @@ const TestList = () => {
       
       // Toplu çakışma çözme fonksiyonu
       const handleBulkConflicts = async (conflictTests, action) => {
-        let updatedTests = [...tests];
-        
         if (action === 'overwrite') {
           // Tümünün üzerine yaz
-          conflictTests.forEach(test => {
+          for (const test of conflictTests) {
             const existingTest = tests.find(t => t.name.toLowerCase() === test.name.toLowerCase());
-            updatedTests = updatedTests.map(t => {
-              if (t.id === existingTest.id) {
-                return {
-                  ...t,
-                  steps: test.steps,
-                  browser: test.browser,
-                  updatedAt: new Date().toISOString()
-                };
-              }
-              return t;
+            await updateTestFlow(existingTest.id, {
+              steps: test.steps,
+              browser: test.browser,
+              updatedAt: new Date().toISOString()
             });
-          });
-          
+          }
           toast.saveSuccess(`${conflictTests.length} test güncellendi`);
         } else if (action === 'rename') {
           // Tümünü yeni isimle kaydet
-          const newTests = conflictTests.map(test => ({
-            id: Date.now().toString() + Math.random().toString(36).substr(2, 9) + Math.random(),
-            name: `${test.name} (Kopyası)`,
-            steps: test.steps,
-            status: 'pending',
-            lastRun: null,
-            duration: null,
-            createdAt: new Date().toISOString(),
-            browser: test.browser
-          }));
-          
-          updatedTests = [...tests, ...newTests];
-          toast.saveSuccess(`${newTests.length} yeni test oluşturuldu`);
+          for (const test of conflictTests) {
+            const newTest = {
+              id: Date.now().toString() + Math.random().toString(36).substr(2, 9) + Math.random(),
+              name: `${test.name} (Kopyası)`,
+              steps: test.steps,
+              status: 'pending',
+              lastRun: null,
+              duration: null,
+              createdAt: new Date().toISOString(),
+              browser: test.browser
+            };
+            await addTestFlow(newTest);
+          }
+          toast.saveSuccess(`${conflictTests.length} yeni test oluşturuldu`);
         } else if (action === 'skip') {
           // Tümünü atla - hiçbir şey yapma
           toast.info(`${conflictTests.length} test atlandı`);
         }
-        
-        // Testleri güncelle
-        setTests(updatedTests);
-        setToStorage('savedTestFlows', updatedTests);
         
         // Modal'ı kapat
         closeModal();

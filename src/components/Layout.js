@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
   PieChart, 
   Workflow,
@@ -10,11 +10,13 @@ import {
   TestTube2
 } from 'lucide-react';
 import ThemeToggle from './ThemeToggle';
+import { useTestFlow } from '../contexts/TestFlowContext';
 import '../styles/main.css';
 
 const Layout = ({ children }) => {
   const location = useLocation();
   const navigate = useNavigate();
+  const { getReportById } = useTestFlow();
 
   // Dinamik sayfa başlığı ayarlama
   useEffect(() => {
@@ -34,10 +36,9 @@ const Layout = ({ children }) => {
         title = 'Raporlar - TestFlow';
       } else if (pathname.startsWith('/report/')) {
         const reportId = pathname.split('/')[2];
-        // Test raporunun adını localStorage'dan almaya çalış
+        // Test raporunun adını context'den almaya çalış
         try {
-          const savedReports = JSON.parse(localStorage.getItem('testReports') || '[]');
-          const report = savedReports.find(r => r.id === reportId);
+          const report = getReportById(parseInt(reportId));
           if (report && report.testName) {
             title = `${report.testName} - Rapor - TestFlow`;
           } else {
@@ -86,7 +87,7 @@ const Layout = ({ children }) => {
     };
 
     updatePageTitle();
-  }, [location.pathname]);
+  }, [location.pathname, getReportById]);
 
   // Navigasyon öncesi TestEditor unsaved changes kontrolü
   const handleNavigation = async (e, targetPath) => {
