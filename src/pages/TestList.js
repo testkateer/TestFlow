@@ -577,28 +577,7 @@ const TestList = () => {
         </div>
       );
       
-      // Modal'ı göster
-      const { id, resolve } = await modal.show({
-        title: 'Test İsmi Çakışmaları',
-        content: modalContent,
-        width: '600px',
-        showCloseButton: true,
-        closeOnEsc: true,
-        closeOnOverlay: true,
-        onClose: () => {
-          // X butonuna basıldığında veya ESC/overlay tıklamasında hiçbir işlem yapma
-          toast.importCanceled();
-          resolve(null);
-        }
-      });
-      
-      // Modal'ı kapatma fonksiyonu
-      const closeModal = () => {
-        modal.close(id);
-        resolve(null);
-      };
-      
-      // Tek bir çakışmayı çözme
+      // Tek bir çakışmayı çözme fonksiyonu
       const handleSingleConflict = async (test, action) => {
         const existingTest = tests.find(t => t.name.toLowerCase() === test.name.toLowerCase());
         let updatedTests = [...tests];
@@ -639,14 +618,14 @@ const TestList = () => {
           toast.info(`"${test.name}" testi atlandı`);
         }
         
+        // Testleri güncelle
+        setTests(updatedTests);
+        setToStorage('savedTestFlows', updatedTests);
+        
         // Çakışan testi listeden kaldır
         const updatedConflictingTests = conflictingTests.filter(t => 
           t.name.toLowerCase() !== test.name.toLowerCase()
         );
-        
-        // Testleri güncelle
-        setTests(updatedTests);
-        setToStorage('savedTestFlows', updatedTests);
         
         // Eğer başka çakışan test kalmadıysa modal'ı kapat
         if (updatedConflictingTests.length === 0) {
@@ -654,7 +633,7 @@ const TestList = () => {
         }
       };
       
-      // Toplu çakışma çözme
+      // Toplu çakışma çözme fonksiyonu
       const handleBulkConflicts = async (conflictTests, action) => {
         let updatedTests = [...tests];
         
@@ -702,6 +681,27 @@ const TestList = () => {
         
         // Modal'ı kapat
         closeModal();
+      };
+
+      // Modal'ı göster
+      const { id, resolve } = await modal.show({
+        title: 'Test İsmi Çakışmaları',
+        content: modalContent,
+        width: '600px',
+        showCloseButton: true,
+        closeOnEsc: true,
+        closeOnOverlay: true,
+        onClose: () => {
+          // X butonuna basıldığında veya ESC/overlay tıklamasında hiçbir işlem yapma
+          toast.importCanceled();
+          resolve(null);
+        }
+      });
+      
+      // Modal'ı kapatma fonksiyonu
+      const closeModal = () => {
+        modal.close(id);
+        resolve(null);
       };
     }
   };
