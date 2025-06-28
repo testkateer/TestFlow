@@ -203,17 +203,17 @@ const TestEditor = () => {
         setIsRunning(true);
         setTestResults(null);
         setTempData('testRerun', { testName, steps });
-        toast.info(`${testName} testi başlatılıyor...`);
+        // Başlatma bildirimi runTestWithHandling tarafından gösterilecek
       },
       onSuccess: (result) => {
         setTestResults(result);
         saveTestReport(result);
-        toast.success(`${testName} testi başarıyla tamamlandı!`);
+        // Başarı bildirimi runTestWithHandling tarafından gösterilecek
       },
       onError: (result) => {
         setTestResults(result);
         saveTestReport(result);
-        toast.error(`${testName} testi başarısız oldu!`);
+        // Hata bildirimi runTestWithHandling tarafından gösterilecek
       },
       onFinally: () => setIsRunning(false)
     });
@@ -230,6 +230,8 @@ const TestEditor = () => {
     importTestFlow(stepTypes, (importedData) => {
       resetEditorState({ testName: importedData.testName, steps: importedData.steps });
       setSelectedStep(null);
+      // TestEditor'da direkt içe aktarma yapıldığı için bildirim göster
+      toast.importSuccess(importedData.testName, importedData.steps.length);
     });
   };
 

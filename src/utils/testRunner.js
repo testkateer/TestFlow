@@ -23,6 +23,10 @@ export const runTestWithHandling = async (testData, options = {}) => {
     // Aktif çalışan testlere ekle
     addActiveRunningTest(testId, testData.testName || testData.name || 'İsimsiz Test');
 
+    // Başlatma bildirimi göster
+    const testName = testData.testName || testData.name || 'İsimsiz Test';
+    toast.info(`${testName} testi başlatılıyor...`);
+
     if (onStart) onStart();
 
     // API çağrısı
@@ -161,10 +165,14 @@ export const showSuccessMessage = (analysisResult) => {
 
 // Hata mesajı göster
 export const showErrorMessage = (analysisResult) => {
-  if (analysisResult.isFullyCompleted) {
-    showSuccessMessage(analysisResult); // Tamamlanmış ama başarısız
+  const { successfulSteps, totalSteps, completedSteps, isFullyCompleted } = analysisResult;
+  
+  if (isFullyCompleted) {
+    // Test tamamlandı ama başarısız
+    const errorMessage = analysisResult.result?.error ? ` Hata: ${analysisResult.result.error}` : '';
+    toast.error(`Test başarısız! ${successfulSteps}/${totalSteps} adım başarılı${errorMessage}`);
   } else {
-    const { successfulSteps, totalSteps, completedSteps } = analysisResult;
+    // Test tamamlanamadı
     toast.warning(`Test tamamlanamadı! ${completedSteps}/${totalSteps} adım tamamlandı. Başarılı: ${successfulSteps}`);
   }
 };
@@ -259,15 +267,8 @@ export const runTestFlow = async (steps, browser = 'chromium', onStepComplete, o
       });
     }
 
-    // Sonuç mesajını göster
-    if (successfulSteps === totalSteps) {
-      toast.success(`Test başarıyla tamamlandı! ${successfulSteps}/${totalSteps} adım başarılı`);
-    } else if (completedSteps < totalSteps) {
-      toast.warning(`Test tamamlanamadı! ${completedSteps}/${totalSteps} adım tamamlandı. Başarılı: ${successfulSteps}`);
-    } else {
-      const errorMessage = analysisResult.result?.error ? ` Hata: ${analysisResult.result.error}` : '';
-      toast.error(`Test başarısız! ${successfulSteps}/${totalSteps} adım başarılı${errorMessage}`);
-    }
+    // Bildirim gösterme işlemi runTestWithHandling tarafından yapılıyor
+    // Burada bildirim göstermiyoruz
 
     return {
       success: analysisResult.success,
@@ -298,7 +299,7 @@ export const runTestFlow = async (steps, browser = 'chromium', onStepComplete, o
       });
     }
 
-    toast.warning(`Test tamamlanamadı! ${completedSteps}/${totalSteps} adım tamamlandı. Başarılı: ${successfulSteps}`);
+    // Bildirim gösterme işlemi runTestWithHandling tarafından yapılıyor
 
     return {
       success: false,

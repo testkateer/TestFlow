@@ -119,7 +119,7 @@ const TestList = () => {
         const updatedTests = tests.map(t => t.id === test.id ? updatedTest : t);
         setTests(updatedTests);
         
-        toast.info(`${test.name} testi başlatılıyor...`);
+        // Başlatma bildirimi runTestWithHandling tarafından gösterilecek
       },
       onSuccess: (result) => {
         // Test sonucunu Reports sayfası için kaydet
@@ -137,7 +137,7 @@ const TestList = () => {
         setTests(finalTests);
         setToStorage('savedTestFlows', finalTests);
         
-        toast.success(`${test.name} testi başarıyla tamamlandı!`);
+        // Başarı bildirimi runTestWithHandling tarafından gösterilecek
       },
       onError: (result) => {
         // Hata durumunda test raporunu kaydet
@@ -155,7 +155,7 @@ const TestList = () => {
         setTests(finalTests);
         setToStorage('savedTestFlows', finalTests);
         
-        toast.error(`${test.name} testi başarısız oldu!`);
+        // Hata bildirimi runTestWithHandling tarafından gösterilecek
       },
       onFinally: () => {
         setRunningTests(prev => {

@@ -230,10 +230,10 @@ const TestReport = () => {
   const runTest = async (testData) => {
     await runTestWithHandling(testData, {
       onStart: () => {
-        toast.info(`${testData.testName} testi başlatılıyor...`);
+        // Başlatma bildirimi runTestWithHandling tarafından gösterilecek
       },
       onSuccess: (result) => {
-        toast.success(`${testData.testName} testi başarıyla tamamlandı!`);
+        // Başarı bildirimi runTestWithHandling tarafından gösterilecek
         
         // Test sonucunu Reports sayfası için kaydet
         saveTestReportToStorage(result, testData);
@@ -246,7 +246,7 @@ const TestReport = () => {
       onError: (result) => {
         // Hata durumunda test raporunu kaydet
         saveTestReportToStorage(result, testData);
-        toast.error(`${testData.testName} testi başarısız oldu!`);
+        // Hata bildirimi runTestWithHandling tarafından gösterilecek
         
         // Sayfa yenilensin ki yeni rapor görülsün
         setTimeout(() => {
