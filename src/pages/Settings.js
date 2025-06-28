@@ -15,11 +15,13 @@ import {
   EyeOff,
   Save,
   RotateCcw,
-  AlertCircle
+  AlertCircle,
+  Keyboard
 } from 'lucide-react';
 import { toast } from '../utils/notifications';
 import { confirmActions } from '../utils/modalUtils';
 import { PageHeader } from '../components';
+import ShortcutsSettings from '../components/Settings/ShortcutsSettings';
 import '../styles/main.css';
 
 const Settings = () => {
@@ -85,7 +87,8 @@ const Settings = () => {
 
   const tabs = [
     { id: 'profile', name: 'Profil', icon: User },
-    { id: 'test', name: 'Test Ayarları', icon: Monitor },
+    // { id: 'test', name: 'Test Ayarları', icon: Monitor }, // Kaldırıldı
+    { id: 'shortcuts', name: 'Kısayollar', icon: Keyboard },
     { id: 'notifications', name: 'Bildirimler', icon: Bell },
     { id: 'security', name: 'Güvenlik', icon: Shield },
     { id: 'data', name: 'Veri Yönetimi', icon: Database }
@@ -219,117 +222,11 @@ const Settings = () => {
             </div>
           )}
 
-          {/* Test Settings Tab */}
-          {activeTab === 'test' && (
-            <div className="settings-section card">
-              <div className="section-header">
-                <h2>
-                  <Monitor size={18} style={{ marginRight: '8px', verticalAlign: 'middle' }} />
-                  Test Ayarları
-                </h2>
-                <p>Varsayılan test yapılandırmaları ve tercihleri</p>
-              </div>
+          {/* Shortcuts Tab */}
+          {activeTab === 'shortcuts' && <ShortcutsSettings />}
 
-              <div className="test-defaults">
-                <h3>
-                  <Settings size={16} style={{ marginRight: '6px', verticalAlign: 'middle' }} />
-                  Varsayılan Değerler
-                </h3>
-                <div className="preference-group">
-                  <div className="preference-item">
-                    <div className="preference-info">
-                      <span className="preference-label">Varsayılan Tarayıcı</span>
-                      <span className="preference-desc">Yeni testler için varsayılan tarayıcı</span>
-                    </div>
-                    <select>
-                      <option>Chrome</option>
-                      <option>Firefox</option>
-                      <option>Safari</option>
-                      <option>Edge</option>
-                    </select>
-                  </div>
-
-                  <div className="preference-item">
-                    <div className="preference-info">
-                      <span className="preference-label">Varsayılan Timeout</span>
-                      <span className="preference-desc">Element bekleme süresi (saniye)</span>
-                    </div>
-                    <input type="number" defaultValue="30" min="5" max="120" />
-                  </div>
-
-                  <div className="preference-item">
-                    <div className="preference-info">
-                      <span className="preference-label">Ekran Çözünürlüğü</span>
-                      <span className="preference-desc">Test sırasında kullanılan ekran boyutu</span>
-                    </div>
-                    <select>
-                      <option>1920x1080 (Full HD)</option>
-                      <option>1366x768 (HD)</option>
-                      <option>1440x900 (WXGA+)</option>
-                      <option>375x667 (Mobile)</option>
-                    </select>
-                  </div>
-                </div>
-              </div>
-
-              <div className="recording-settings">
-                <h3>
-                  <Camera size={16} style={{ marginRight: '6px', verticalAlign: 'middle' }} />
-                  Kayıt Ayarları
-                </h3>
-                <div className="preference-group">
-                  <div className="preference-item">
-                    <div className="preference-info">
-                      <span className="preference-label">Ekran Görüntüsü</span>
-                      <span className="preference-desc">Her adımda ekran görüntüsü al</span>
-                    </div>
-                    <button className="toggle-switch active">
-                      <div className="toggle-thumb">
-                        <Camera size={12} />
-                      </div>
-                    </button>
-                  </div>
-
-                  <div className="preference-item">
-                    <div className="preference-info">
-                      <span className="preference-label">Video Kaydı</span>
-                      <span className="preference-desc">Test çalıştırmasının video kaydı</span>
-                    </div>
-                    <select>
-                      <option>Her zaman</option>
-                      <option>Sadece hata durumunda</option>
-                      <option>Hiçbir zaman</option>
-                    </select>
-                  </div>
-
-                  <div className="preference-item">
-                    <div className="preference-info">
-                      <span className="preference-label">Video Kalitesi</span>
-                      <span className="preference-desc">Kayıt kalitesi</span>
-                    </div>
-                    <select>
-                      <option>Yüksek (1080p)</option>
-                      <option>Orta (720p)</option>
-                      <option>Düşük (480p)</option>
-                    </select>
-                  </div>
-                </div>
-              </div>
-
-              <div className="parallel-execution">
-                <h3>⚡ Paralel Çalıştırma</h3>
-                <div className="preference-group">
-                  <div className="preference-item">
-                    <div className="preference-info">
-                      <span className="preference-label">Maksimum Paralel Test</span>
-                      <span className="preference-desc">Aynı anda çalışabilecek test sayısı</span>
-                    </div>
-                    <input type="number" defaultValue="3" min="1" max="10" />
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
+          {/* Test Settings Tab - Removed */}
+          {/* {activeTab === 'test' && ( ... )} */}
 
           {/* Notifications Tab */}
           {activeTab === 'notifications' && (

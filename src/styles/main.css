@@ -5209,3 +5209,76 @@ h1 svg, h2 svg, h3 svg, h4 svg, h5 svg, h6 svg {
     background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), transparent);
   }
 }
+
+/* Shortcuts Settings Page Styles */
+.shortcuts-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: var(--space-6);
+  padding-top: var(--space-4);
+}
+
+.shortcut-group h3 {
+  font-size: var(--text-lg);
+  color: var(--text-primary);
+  margin-bottom: var(--space-4);
+  border-bottom: 2px solid var(--border-secondary);
+  padding-bottom: var(--space-2);
+}
+
+.shortcuts-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.shortcuts-table tr {
+  border-bottom: 1px solid var(--border-secondary);
+}
+
+.shortcuts-table tr:last-child {
+  border-bottom: none;
+}
+
+.shortcuts-table td {
+  padding: var(--space-3) var(--space-2);
+  vertical-align: middle;
+}
+
+.shortcuts-table .shortcut-description {
+  color: var(--text-secondary);
+  font-weight: var(--font-weight-medium);
+}
+
+.shortcuts-table .shortcut-keys {
+  text-align: right;
+}
+
+.shortcuts-table .shortcut-keys code {
+  background: var(--bg-tertiary);
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-sm);
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
+  font-size: var(--text-sm);
+  color: var(--text-primary);
+  border: 1px solid var(--border-secondary);
+}
+
+[data-theme="dark"] .shortcuts-table .shortcut-keys code {
+  background: var(--color-gray-900);
+}
+
+/* Shortcuts Settings Page Styles */
+.shortcuts-container.single-list {
+  grid-template-columns: 1fr; /* Override grid for single list */
+}
+
+.shortcut-group h3,
+.shortcuts-table thead th {
+  font-size: var(--text-lg);
+  color: var(--text-primary);
+  margin-bottom: var(--space-4);
+  border-bottom: 2px solid var(--border-secondary);
+  padding-bottom: var(--space-2);
+  text-align: left;
+  font-weight: var(--font-weight-semibold);
+}
