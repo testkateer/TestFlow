@@ -275,13 +275,14 @@ const Dashboard = () => {
             <div className="test-list">
               {recentTests.length > 0 ? (
                 recentTests.map((test) => (
-                  <div key={test.id} className="test-item">
+                  <div 
+                    key={test.id} 
+                    className="test-item clickable animate-on-hover"
+                    onClick={() => navigateToTestReport(test.id)}
+                    title="Test raporunu görüntüle"
+                  >
                     <div className="test-info">
-                      <div 
-                        className="test-name clickable"
-                        onClick={() => navigateToTestReport(test.id)}
-                        title="Test raporunu görüntüle"
-                      >
+                      <div className="test-name">
                         {test.name} <span className="test-id-display">{test.id}</span>
                       </div>
                       <div className="test-timestamp">{test.timestamp}</div>
@@ -332,13 +333,14 @@ const Dashboard = () => {
             <div className="scheduled-list">
               {scheduledTests.length > 0 ? (
                 scheduledTests.map((test) => (
-                  <div key={test.id} className="scheduled-item">
+                  <div 
+                    key={test.id} 
+                    className="scheduled-item clickable animate-on-hover"
+                    onClick={() => navigateToTestEditor(test.id)}
+                    title="Test akışını düzenle"
+                  >
                     <div className="scheduled-info">
-                      <div 
-                        className="scheduled-name clickable"
-                        onClick={() => navigateToTestEditor(test.id)}
-                        title="Test akışını düzenle"
-                      >
+                      <div className="scheduled-name">
                         {test.name} <span className="test-id-display">{test.id}</span>
                       </div>
                       <div className="scheduled-frequency">{test.frequency}</div>

@@ -13,9 +13,7 @@ import {
   Heart,
   CheckSquare,
   Square,
-  X,
-  AlertCircle,
-  RefreshCw
+  X
 } from 'lucide-react';
 import { exportTestFlow } from '../utils/testUtils';
 import { runTestWithHandling } from '../utils/testRunner';

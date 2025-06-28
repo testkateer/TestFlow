@@ -259,57 +259,100 @@
   --text-secondary: var(--color-gray-200);
   --text-tertiary: var(--color-gray-300);
   --text-muted: var(--color-gray-400);
-  --text-inverse: var(--color-white);
   
-    --border-primary: rgba(255, 255, 255, 0.1);
-    --border-secondary: rgba(255, 255, 255, 0.08);
-  --border-focus: var(--color-primary-500);
-    
+  --border-primary: rgba(255, 255, 255, 0.1);
+  --border-secondary: rgba(255, 255, 255, 0.08);
+  
   /* Dark Mode Status Colors */
-    --color-success-light: rgba(16, 185, 129, 0.2);
+  --color-success-light: rgba(16, 185, 129, 0.2);
   --color-success-dark: var(--color-success-500);
-    --color-error-light: rgba(239, 68, 68, 0.2);
+  --color-error-light: rgba(239, 68, 68, 0.2);
   --color-error-dark: var(--color-error-500);
-    --color-warning-light: rgba(245, 158, 11, 0.2);
+  --color-warning-light: rgba(245, 158, 11, 0.2);
   --color-warning-dark: var(--color-warning-500);
-    --color-primary-light: rgba(59, 130, 246, 0.2);
-    
-  /* Enhanced Shadows for Dark Mode */
-  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
-    --shadow-md: 0 1px 3px 0 rgba(0, 0, 0, 0.4), 0 1px 2px 0 rgba(0, 0, 0, 0.3);
-    --shadow-lg: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -1px rgba(0, 0, 0, 0.3);
-    --shadow-xl: 0 20px 50px rgba(0, 0, 0, 0.5), 0 4px 20px rgba(0, 0, 0, 0.4);
-    
-  --overlay: var(--overlay-dark);
+  --color-primary-light: rgba(59, 130, 246, 0.2);
   
   /* Secondary Color Adjustments */
   --color-secondary: var(--color-gray-500);
   --color-secondary-hover: var(--color-gray-400);
 }
 
-/* Base Styles */
 * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
-  transition: background-color var(--transition-normal), 
-              color var(--transition-normal), 
-              border-color var(--transition-normal);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen,
+    Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
   background-color: var(--bg-secondary);
   color: var(--text-primary);
+  line-height: var(--leading-normal);
+  font-size: var(--font-md);
+}
+
+/* Genel tıklanabilir öğe stili */
+.clickable {
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  position: relative;
+  overflow: hidden;
+}
+
+.clickable:hover {
+  opacity: 0.9;
+}
+
+.clickable:active {
+  transform: scale(0.98);
+}
+
+/* Tıklama dalgası efekti için */
+.clickable::after {
+  content: '';
+  display: block;
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  background-image: radial-gradient(circle, rgba(255, 255, 255, 0.4) 10%, transparent 10.01%);
+  background-repeat: no-repeat;
+  background-position: 50%;
+  transform: scale(10, 10);
+  opacity: 0;
+  transition: transform 0.5s, opacity 0.8s;
+}
+
+.clickable:active::after {
+  transform: scale(0, 0);
+  opacity: 0.3;
+  transition: 0s;
+}
+
+/* Hover durumunda animasyon */
+.animate-on-hover {
+  transition: all var(--transition-normal);
+}
+
+.animate-on-hover:hover {
+  animation: pulse 1.5s infinite;
+}
+
+[data-theme="dark"] .animate-on-hover:hover {
+  animation: pulse 1.5s infinite;
+  box-shadow: 0 0 5px rgba(255, 255, 255, 0.2);
 }
 
 code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
-    monospace;
+  font-family: source-code-pro, Menlo, Monaco, Consolas, "Courier New", monospace;
+  background-color: var(--bg-tertiary);
+  padding: 0.2em 0.4em;
+  border-radius: var(--radius-sm);
 }
 
 /* Container */
@@ -2405,7 +2448,7 @@ h1 svg, h2 svg, h3 svg, h4 svg, h5 svg, h6 svg {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: var(--spacing-lg) 0;
+  padding: var(--spacing-lg);
   border-bottom: 1px solid var(--border-secondary);
 }
 
@@ -2433,6 +2476,23 @@ h1 svg, h2 svg, h3 svg, h4 svg, h5 svg, h6 svg {
   text-decoration: underline;
 }
 
+.test-item.clickable {
+  cursor: pointer;
+  transition: all var(--transition-normal);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+
+.test-item.clickable:hover {
+  background-color: var(--bg-hover);
+  box-shadow: 0 3px 6px rgba(0,0,0,0.1);
+  transform: translateY(-1px);
+}
+
+.test-item.clickable:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+
 .test-timestamp {
   font-size: var(--font-xs);
   color: var(--text-tertiary);
@@ -2455,7 +2515,7 @@ h1 svg, h2 svg, h3 svg, h4 svg, h5 svg, h6 svg {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: var(--spacing-lg) 0;
+  padding: var(--spacing-lg);
   border-bottom: 1px solid var(--border-secondary);
 }
 
@@ -2481,6 +2541,23 @@ h1 svg, h2 svg, h3 svg, h4 svg, h5 svg, h6 svg {
 .scheduled-name.clickable:hover {
   color: var(--color-primary);
   text-decoration: underline;
+}
+
+.scheduled-item.clickable {
+  cursor: pointer;
+  transition: all var(--transition-normal);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+
+.scheduled-item.clickable:hover {
+  background-color: var(--bg-hover);
+  box-shadow: 0 3px 6px rgba(0,0,0,0.1);
+  transform: translateY(-1px);
+}
+
+.scheduled-item.clickable:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
 }
 
 .scheduled-frequency {

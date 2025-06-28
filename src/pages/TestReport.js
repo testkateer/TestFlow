@@ -6,7 +6,6 @@ import {
   Clock,
   Download,
   CheckCircle,
-  XCircle,
   AlertCircle,
   Image,
   Video,
@@ -17,7 +16,6 @@ import {
   BarChart3,
   RefreshCw,
   ClipboardList,
-  AlertTriangle
 } from 'lucide-react';
 import { downloadTestReport, saveTestReportToStorage } from '../utils/reportUtils';
 import { runTestWithHandling } from '../utils/testRunner';
@@ -25,7 +23,6 @@ import { setTempData } from '../utils/storageUtils';
 import { toast } from '../utils/notificationUtils';
 import { useNotification } from '../contexts/NotificationContext';
 import { getStatusIcon } from '../utils/statusUtils';
-import { formatDateTime } from '../utils/dateUtils';
 import { LoadingState, ErrorState } from '../components';
 import '../styles/main.css';
 
