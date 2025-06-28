@@ -1654,10 +1654,9 @@ h1 svg, h2 svg, h3 svg, h4 svg, h5 svg, h6 svg {
 }
 
 .content-wrapper {
-  padding: var(--spacing-3xl);
-  max-width: 100%;
-  margin: 0 auto; 
-  min-width: 100%;
+  padding: var(--spacing-2xl);
+  width: 100%;
+  min-height: 100%;
 }
 
 /* Modal Component */
