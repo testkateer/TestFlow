@@ -11,6 +11,7 @@ import {
   Plus,
   BarChart3
 } from 'lucide-react';
+import { PageHeader } from '../components';
 import '../styles/main.css';
 
 const Scheduling = () => {
@@ -80,12 +81,10 @@ const Scheduling = () => {
 
   return (
     <div className="scheduling-page">
-      <div className="page-header">
-        <div className="header-content">
-          <h1>Zamanlama</h1>
-          <p>Testlerin otomatik çalıştırma zamanlarını yönetin</p>
-        </div>
-      </div>
+      <PageHeader 
+        title="Zamanlama" 
+        subtitle="Testlerin otomatik çalıştırma zamanlarını yönetin" 
+      />
 
       {/* Tab Navigation */}
       <div className="tab-navigation">

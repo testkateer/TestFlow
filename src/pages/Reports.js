@@ -15,7 +15,7 @@ import {
 import { downloadTestReport } from '../utils/reportUtils';
 import { getFromStorage } from '../utils/storageUtils';
 import { isToday, isThisWeek } from '../utils/dateUtils';
-import { NoDataState } from '../components';
+import { NoDataState, PageHeader } from '../components';
 import '../styles/main.css';
 
 const Reports = () => {
@@ -117,35 +117,35 @@ const Reports = () => {
 
   return (
     <div className="reports-page">
-      <div className="page-header">
-        <div className="header-content">
-          <h1>Raporlar</h1>
-          <p>Tüm test çalıştırma sonuçlarını görüntüleyin ve analiz edin</p>
-        </div>
-        <div className="header-stats">
-          <div className="stat-card">
-            <BarChart3 size={20} />
-            <div>
-              <span className="stat-number">{reportsList.length}</span>
-              <span className="stat-label">Toplam Rapor</span>
+      <PageHeader 
+        title="Raporlar" 
+        subtitle="Tüm test çalıştırma sonuçlarını görüntüleyin ve analiz edin"
+        stats={
+          <>
+            <div className="stat-card">
+              <BarChart3 size={20} />
+              <div>
+                <span className="stat-number">{reportsList.length}</span>
+                <span className="stat-label">Toplam Rapor</span>
+              </div>
             </div>
-          </div>
-          <div className="stat-card success">
-            <CheckCircle size={20} />
-            <div>
-              <span className="stat-number">{reportsList.filter(r => r.status === 'success').length}</span>
-              <span className="stat-label">Başarılı</span>
+            <div className="stat-card success">
+              <CheckCircle size={20} />
+              <div>
+                <span className="stat-number">{reportsList.filter(r => r.status === 'success').length}</span>
+                <span className="stat-label">Başarılı</span>
+              </div>
             </div>
-          </div>
-          <div className="stat-card error">
-            <XCircle size={20} />
-            <div>
-              <span className="stat-number">{reportsList.filter(r => r.status === 'error').length}</span>
-              <span className="stat-label">Başarısız</span>
+            <div className="stat-card error">
+              <XCircle size={20} />
+              <div>
+                <span className="stat-number">{reportsList.filter(r => r.status === 'error').length}</span>
+                <span className="stat-label">Başarısız</span>
+              </div>
             </div>
-          </div>
-        </div>
-      </div>
+          </>
+        }
+      />
 
       {/* Arama ve Filtreler */}
       <div className="filters-section card">

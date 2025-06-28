@@ -25,7 +25,7 @@ import { formatDateTime} from '../utils/dateUtils';
 import { saveTestReportToStorage, calculateTestDuration } from '../utils/reportUtils';
 import { toast, notify } from '../utils/notificationUtils';
 import { confirmActions } from '../utils/modalUtils';
-import { LoadingState, ErrorState, NoDataState } from '../components';
+import { LoadingState, ErrorState, NoDataState, PageHeader } from '../components';
 import '../styles/main.css';
 
 const TestList = () => {
@@ -370,12 +370,10 @@ const TestList = () => {
   if (isLoading) {
     return (
       <div className="test-list-page">
-        <div className="page-header">
-          <div className="header-content">
-            <h1>Akışlar</h1>
-            <p>Tüm test senaryolarınızı görüntüleyin ve yönetin</p>
-          </div>
-        </div>
+        <PageHeader 
+          title="Akışlar" 
+          subtitle="Tüm test senaryolarınızı görüntüleyin ve yönetin" 
+        />
         <LoadingState message="Test akışları yükleniyor..." />
       </div>
     );
@@ -385,12 +383,10 @@ const TestList = () => {
   if (error) {
     return (
       <div className="test-list-page">
-        <div className="page-header">
-          <div className="header-content">
-            <h1>Akışlar</h1>
-            <p>Tüm test senaryolarınızı görüntüleyin ve yönetin</p>
-          </div>
-        </div>
+        <PageHeader 
+          title="Akışlar" 
+          subtitle="Tüm test senaryolarınızı görüntüleyin ve yönetin" 
+        />
         <ErrorState message={error} />
       </div>
     );
@@ -398,34 +394,34 @@ const TestList = () => {
 
   return (
     <div className="test-list-page">
-      <div className="page-header">
-        <div className="header-content">
-          <h1>Akışlar</h1>
-          <p>Tüm test senaryolarınızı görüntüleyin ve yönetin</p>
-        </div>
-        <div className="header-actions">
-          <button 
-            className={`btn btn-secondary ${showFavorites ? 'active' : ''}`}
-            onClick={() => setShowFavorites(!showFavorites)}
-          >
-            <Heart size={16} />
-            {showFavorites ? 'Tüm Testler' : 'Favoriler'}
-          </button>
-          <button 
-            className={`btn btn-secondary ${isMultiSelectMode ? 'active' : ''}`}
-            onClick={() => {
-              if (isMultiSelectMode) {
-                clearSelection();
-              } else {
-                setIsMultiSelectMode(true);
-              }
-            }}
-          >
-            <CheckSquare size={16} />
-            {isMultiSelectMode ? 'Seçimi İptal' : 'Çoklu Seçim'}
-          </button>
-        </div>
-      </div>
+      <PageHeader 
+        title="Akışlar" 
+        subtitle="Tüm test senaryolarınızı görüntüleyin ve yönetin"
+        actions={
+          <>
+            <button 
+              className={`btn btn-secondary ${showFavorites ? 'active' : ''}`}
+              onClick={() => setShowFavorites(!showFavorites)}
+            >
+              <Heart size={16} />
+              {showFavorites ? 'Tüm Testler' : 'Favoriler'}
+            </button>
+            <button 
+              className={`btn btn-secondary ${isMultiSelectMode ? 'active' : ''}`}
+              onClick={() => {
+                if (isMultiSelectMode) {
+                  clearSelection();
+                } else {
+                  setIsMultiSelectMode(true);
+                }
+              }}
+            >
+              <CheckSquare size={16} />
+              {isMultiSelectMode ? 'Seçimi İptal' : 'Çoklu Seçim'}
+            </button>
+          </>
+        }
+      />
 
       {/* Arama ve Filtreler */}
       <div className="filters-section card">

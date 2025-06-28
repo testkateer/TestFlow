@@ -15,7 +15,7 @@ import { getFromStorage} from '../utils/storageUtils';
 import { clearExpiredRunningTests } from '../utils/testRunner';
 import { getStatusIcon, getStatusText } from '../utils/statusUtils';
 import { formatRelativeTime } from '../utils/dateUtils';
-import { ErrorState, NoDataState } from '../components';
+import { ErrorState, NoDataState, PageHeader } from '../components';
 import '../styles/main.css';
 
 const Dashboard = () => {
@@ -225,10 +225,10 @@ const Dashboard = () => {
   if (error) {
     return (
       <div className="dashboard">
-        <div className="page-header">
-          <h1>Dashboard</h1>
-          <p>Test otomasyonu platform genel durumu</p>
-        </div>
+        <PageHeader 
+          title="Dashboard" 
+          subtitle="Test otomasyonu platform genel durumu" 
+        />
         <ErrorState message={error} />
       </div>
     );
@@ -236,12 +236,10 @@ const Dashboard = () => {
 
   return (
     <div className="dashboard">
-      <div className="page-header">
-        <div>
-          <h1>Dashboard</h1>
-          <p>Test otomasyonu platform genel durumu</p>
-        </div>
-      </div>
+      <PageHeader 
+        title="Dashboard" 
+        subtitle="Test otomasyonu platform genel durumu" 
+      />
 
       {/* Test Özeti Cards */}
       {testSummary.length > 0 && (

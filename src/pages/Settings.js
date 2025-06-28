@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { toast, notify } from '../utils/notificationUtils';
 import { confirmActions } from '../utils/modalUtils';
+import { PageHeader } from '../components';
 import '../styles/main.css';
 
 const Settings = () => {
@@ -92,12 +93,10 @@ const Settings = () => {
 
   return (
     <div className="settings-page">
-      <div className="page-header">
-        <div className="header-content">
-          <h1>Ayarlar</h1>
-          <p>Kişisel tercihlerinizi ve sistem ayarlarınızı yönetin</p>
-        </div>
-      </div>
+      <PageHeader 
+        title="Ayarlar" 
+        subtitle="Kişisel tercihlerinizi ve sistem ayarlarınızı yönetin" 
+      />
 
       <div className="settings-layout">
         {/* Sidebar */}
