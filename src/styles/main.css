@@ -5028,6 +5028,122 @@ h1 svg, h2 svg, h3 svg, h4 svg, h5 svg, h6 svg {
   background: var(--color-slate-800);
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
 }
+
+/* ============================================
+   MODERN TEST SUMMARY STYLES
+   ============================================ */
+
+.test-summary-modern {
+  padding: var(--space-6);
+  border-radius: var(--radius-2xl);
+  background: linear-gradient(135deg, var(--bg-primary), var(--bg-secondary));
+  border: 1px solid var(--border-secondary);
+  box-shadow: var(--shadow-lg);
+}
+
+.summary-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-6);
+}
+
+.summary-header h3 {
+  margin: 0;
+  font-size: var(--text-xl);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-primary);
+}
+
+.summary-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-4);
+  margin-bottom: var(--space-6);
+}
+
+.metric-item {
+  text-align: center;
+  padding: var(--space-4);
+  border-radius: var(--radius-lg);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-secondary);
+  transition: all var(--transition-normal);
+}
+
+.metric-item:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.metric-value {
+  font-size: var(--text-3xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--text-primary);
+  margin-bottom: var(--space-1);
+}
+
+.metric-item.success .metric-value {
+  color: var(--color-success);
+}
+
+.metric-item.error .metric-value {
+  color: var(--color-error);
+}
+
+.metric-label {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  font-weight: var(--font-weight-medium);
+}
+
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+.progress-labels {
+  display: flex;
+  justify-content: center;
+}
+
+.progress-text {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  font-weight: var(--font-weight-medium);
+}
+
+
+/* Dark theme adjustments */
+[data-theme="dark"] .test-summary-modern {
+  background: linear-gradient(135deg, var(--color-slate-800), var(--color-slate-700));
+  border-color: var(--color-slate-600);
+}
+
+[data-theme="dark"] .metric-item {
+  background: var(--color-slate-700);
+  border-color: var(--color-slate-600);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .summary-header {
+    flex-direction: column;
+    gap: var(--space-4);
+    text-align: center;
+  }
+  
+  .summary-metrics {
+    grid-template-columns: 1fr;
+    gap: var(--space-3);
+  }
+  
+  .success-rate-badge {
+    width: 56px;
+    height: 56px;
+    font-size: var(--text-lg);
+  }
+}
 [data-theme="dark"] .step-type {
   background: linear-gradient(135deg, var(--bg-secondary), var(--color-slate-800));
 }

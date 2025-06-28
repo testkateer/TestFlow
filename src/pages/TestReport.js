@@ -453,36 +453,27 @@ const TestReport = () => {
       {activeTab === 'overview' && (
         <div className="overview-content">
           <div className="overview-grid">
-            <div className="summary-card card">
-              <h3>
-                <BarChart3 size={16} style={{ marginRight: '6px', verticalAlign: 'middle' }} />
-                Test Özeti
-              </h3>
-              <div className="summary-stats">
-                <div className="summary-row">
-                  <span>Toplam Adım:</span>
-                  <span>{testDetails.totalSteps}</span>
+            <div className="test-summary-modern card">
+              <div className="summary-header">
+                <h3>Test Özeti</h3>
+              </div>
+              
+              <div className="summary-metrics">
+                <div className="metric-item">
+                  <div className="metric-value">{testDetails.totalSteps}</div>
+                  <div className="metric-label">Toplam Adım</div>
                 </div>
-                <div className="summary-row success">
-                  <span>Başarılı:</span>
-                  <span>{testDetails.passedSteps}</span>
+                <div className="metric-item success">
+                  <div className="metric-value">{testDetails.passedSteps}</div>
+                  <div className="metric-label">Başarılı</div>
                 </div>
-                <div className="summary-row error">
-                  <span>Başarısız:</span>
-                  <span>{testDetails.failedSteps}</span>
-                </div>
-                <div className="summary-row">
-                  <span>Başarı Oranı:</span>
-                  <span>{Math.round((testDetails.passedSteps / testDetails.totalSteps) * 100)}%</span>
+                <div className="metric-item error">
+                  <div className="metric-value">{testDetails.failedSteps}</div>
+                  <div className="metric-label">Başarısız</div>
                 </div>
               </div>
 
-              <div className="progress-bar">
-                <div
-                  className="progress-fill success"
-                  style={{ width: `${(testDetails.passedSteps / testDetails.totalSteps) * 100}%` }}
-                ></div>
-              </div>
+
             </div>
 
             {/* Hata Detayları - Sadece hata varsa göster */}
