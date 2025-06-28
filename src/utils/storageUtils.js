@@ -1,15 +1,16 @@
 // LocalStorage işlemleri için ortak fonksiyonlar
 
 // Güvenli localStorage okuma
-export const getFromStorage = (key, defaultValue = null) => {
+export function getFromStorage(key, defaultValue = null) {
   try {
-    const item = localStorage.getItem(key);
-    return item ? JSON.parse(item) : defaultValue;
+    const data = localStorage.getItem(key);
+    console.log(`Storage data for key '${key}':`, data ? 'Found' : 'Not found');
+    return data ? JSON.parse(data) : defaultValue;
   } catch (error) {
-    console.error(`Storage okuma hatası (${key}):`, error);
+    console.error(`Error reading from localStorage for key '${key}':`, error);
     return defaultValue;
   }
-};
+}
 
 // Güvenli localStorage yazma
 export const setToStorage = (key, value) => {

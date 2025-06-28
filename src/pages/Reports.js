@@ -15,6 +15,7 @@ import {
 import { downloadTestReport } from '../utils/reportUtils';
 import { getFromStorage } from '../utils/storageUtils';
 import { isToday, isThisWeek } from '../utils/dateUtils';
+import { NoDataState } from '../components';
 import '../styles/main.css';
 
 const Reports = () => {
@@ -208,129 +209,142 @@ const Reports = () => {
         </div>
         
         <div className="table-container">
-          <table>
-            <thead>
-              <tr>
-                <th>Test Adı</th>
-                <th>Durum</th>
-                <th>Başarı Oranı</th>
-                <th>Süre</th>
-                <th>Tarih & Saat</th>
-                <th>Tetikleyici</th>
-                <th>Loglar</th>
-              </tr>
-            </thead>
-            <tbody>
-              {currentReports.map((report) => {
-                const testName = report.testName || report.name || 'İsimsiz Test';
-                const description = report.description || '';
-                const totalSteps = report.totalSteps || 0;
-                const successfulSteps = report.successfulSteps || report.passedSteps || 0;
-                const timestamp = report.timestamp || report.date || new Date().toISOString();
-                const reportDate = new Date(timestamp);
-                const trigger = report.trigger || 'Manuel';
-                
-                return (
-                <tr key={report.id}>
-                  <td>
-                    <div className="test-info">
-                      <h4>
-                        {testName}
-                        <span className="test-id-display">{report.id}</span>
-                      </h4>
-                      <p>{description}</p>
-                    </div>
-                  </td>
-                  <td>
-                    <span className={`status-badge status-${report.status}`}>
-                      {getStatusIcon(report.status)}
-                      {report.status === 'success' ? 'Başarılı' : 'Başarısız'}
-                    </span>
-                  </td>
-                  <td>
-                    <div className="success-rate">
-                      <span className="percentage">{totalSteps > 0 ? getSuccessRate(successfulSteps, totalSteps) : 0}%</span>
-                      <div className="progress-bar">
-                        <div 
-                          className="progress-fill" 
-                          style={{ width: `${totalSteps > 0 ? getSuccessRate(successfulSteps, totalSteps) : 0}%` }}
-                        ></div>
-                      </div>
-                      <span className="steps-count">{successfulSteps}/{totalSteps}</span>
-                    </div>
-                  </td>
-                  <td>
-                    <div className="duration">
-                      <Clock size={14} />
-                      {report.duration || '-'}
-                    </div>
-                  </td>
-                  <td>
-                    <div className="datetime">
-                      <div className="date">
-                        <Calendar size={14} />
-                        {reportDate.toLocaleDateString('tr-TR')}
-                      </div>
-                      <div className="time">{reportDate.toLocaleTimeString('tr-TR')}</div>
-                    </div>
-                  </td>
-                  <td>
-                    <span className={`trigger-badge ${trigger.toLowerCase()}`}>
-                      {trigger}
-                    </span>
-                  </td>
-                  <td>
-                    <div className="action-buttons">
-                      <button 
-                        className="btn btn-primary btn-sm"
-                        onClick={() => handleViewReport(report.id)}
-                      >
-                        <Eye size={14} />
-                        Görüntüle
-                      </button>
-                      <button 
-                        className="btn btn-secondary btn-sm"
-                        onClick={() => handleDownloadReport(report)}
-                      >
-                        <Download size={14} />
-                        İndir
-                      </button>
-                    </div>
-                  </td>
+          {filteredReports.length > 0 ? (
+            <table>
+              <thead>
+                <tr>
+                  <th>Test Adı</th>
+                  <th>Durum</th>
+                  <th>Başarı Oranı</th>
+                  <th>Süre</th>
+                  <th>Tarih & Saat</th>
+                  <th>Tetikleyici</th>
+                  <th>Loglar</th>
                 </tr>
-                );
-              })}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {currentReports.map((report) => {
+                  const testName = report.testName || report.name || 'İsimsiz Test';
+                  const description = report.description || '';
+                  const totalSteps = report.totalSteps || 0;
+                  const successfulSteps = report.successfulSteps || report.passedSteps || 0;
+                  const timestamp = report.timestamp || report.date || new Date().toISOString();
+                  const reportDate = new Date(timestamp);
+                  const trigger = report.trigger || 'Manuel';
+                  
+                  return (
+                  <tr key={report.id}>
+                    <td>
+                      <div className="test-info">
+                        <h4>
+                          {testName}
+                          <span className="test-id-display">{report.id}</span>
+                        </h4>
+                        <p>{description}</p>
+                      </div>
+                    </td>
+                    <td>
+                      <span className={`status-badge status-${report.status}`}>
+                        {getStatusIcon(report.status)}
+                        {report.status === 'success' ? 'Başarılı' : 'Başarısız'}
+                      </span>
+                    </td>
+                    <td>
+                      <div className="success-rate">
+                        <span className="percentage">{totalSteps > 0 ? getSuccessRate(successfulSteps, totalSteps) : 0}%</span>
+                        <div className="progress-bar">
+                          <div 
+                            className="progress-fill" 
+                            style={{ width: `${totalSteps > 0 ? getSuccessRate(successfulSteps, totalSteps) : 0}%` }}
+                          ></div>
+                        </div>
+                        <span className="steps-count">{successfulSteps}/{totalSteps}</span>
+                      </div>
+                    </td>
+                    <td>
+                      <div className="duration">
+                        <Clock size={14} />
+                        {report.duration || '-'}
+                      </div>
+                    </td>
+                    <td>
+                      <div className="datetime">
+                        <div className="date">
+                          <Calendar size={14} />
+                          {reportDate.toLocaleDateString('tr-TR')}
+                        </div>
+                        <div className="time">{reportDate.toLocaleTimeString('tr-TR')}</div>
+                      </div>
+                    </td>
+                    <td>
+                      <span className={`trigger-badge ${trigger.toLowerCase()}`}>
+                        {trigger}
+                      </span>
+                    </td>
+                    <td>
+                      <div className="action-buttons">
+                        <button 
+                          className="btn btn-primary btn-sm"
+                          onClick={() => handleViewReport(report.id)}
+                        >
+                          <Eye size={14} />
+                          Görüntüle
+                        </button>
+                        <button 
+                          className="btn btn-secondary btn-sm"
+                          onClick={() => handleDownloadReport(report)}
+                        >
+                          <Download size={14} />
+                          İndir
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          ) : (
+            <NoDataState 
+              title="Henüz test çalıştırılmamış" 
+              message={searchTerm || filterStatus !== 'all' || filterDate !== 'all' ? 
+                "Arama veya filtreleme kriterlerinize uygun rapor bulunamadı." : 
+                "Test sonuçlarını görmek için önce bazı testler çalıştırın."}
+              size="small"
+              icon={<AlertCircle size={40} className="no-data-icon" />}
+            />
+          )}
         </div>
         {/* Pagination Controls */}
-        <div className="pagination-controls">
-          <div className="items-per-page">
-            <label>Sayfa başına rapor:</label>
-            <select value={itemsPerPage} onChange={handleItemsPerPageChange}>
-              <option value={25}>25</option>
-              <option value={50}>50</option>
-              <option value={100}>100</option>
-            </select>
+        {filteredReports.length > 0 && (
+          <div className="pagination-controls">
+            <div className="items-per-page">
+              <label>Sayfa başına rapor:</label>
+              <select value={itemsPerPage} onChange={handleItemsPerPageChange}>
+                <option value={25}>25</option>
+                <option value={50}>50</option>
+                <option value={100}>100</option>
+              </select>
+            </div>
+            <div className="pagination-buttons">
+              <button 
+                className="btn btn-secondary btn-sm"
+                onClick={() => handlePageChange(currentPage - 1)}
+                disabled={currentPage === 1}
+              >
+                Önceki
+              </button>
+              <span>Sayfa {currentPage} / {totalPages}</span>
+              <button 
+                className="btn btn-secondary btn-sm"
+                onClick={() => handlePageChange(currentPage + 1)}
+                disabled={currentPage === totalPages}
+              >
+                Sonraki
+              </button>
+            </div>
           </div>
-          <div className="pagination-buttons">
-            <button 
-              className="btn btn-secondary btn-sm"
-              onClick={() => handlePageChange(currentPage - 1)}
-              disabled={currentPage === 1}
-            >
-              Önceki
-            </button>
-            <span>Sayfa {currentPage} / {totalPages}</span>
-            <button 
-              className="btn btn-secondary btn-sm"
-              onClick={() => handlePageChange(currentPage + 1)}
-              disabled={currentPage === totalPages}
-            >
-              Sonraki
-            </button>
-          </div>
-        </div>
+        )}
       </div>
     </div>
   );

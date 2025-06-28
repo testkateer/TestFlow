@@ -13,7 +13,9 @@ import {
   Heart,
   CheckSquare,
   Square,
-  X
+  X,
+  AlertCircle,
+  RefreshCw
 } from 'lucide-react';
 import { exportTestFlow } from '../utils/testUtils';
 import { runTestWithHandling } from '../utils/testRunner';
@@ -23,6 +25,7 @@ import { formatDateTime} from '../utils/dateUtils';
 import { saveTestReportToStorage, calculateTestDuration } from '../utils/reportUtils';
 import { toast, notify } from '../utils/notificationUtils';
 import { confirmActions } from '../utils/modalUtils';
+import { LoadingState, ErrorState, NoDataState } from '../components';
 import '../styles/main.css';
 
 const TestList = () => {
@@ -36,12 +39,23 @@ const TestList = () => {
   const [selectedTests, setSelectedTests] = useState(new Set());
   const [isMultiSelectMode, setIsMultiSelectMode] = useState(false);
   const [showFavorites, setShowFavorites] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   // Kaydedilmiş testleri yükle - storage utility kullan
   useEffect(() => {
     const loadSavedTests = () => {
-      const savedTests = getFromStorage('savedTestFlows', []);
-      setTests(savedTests);
+      try {
+        setIsLoading(true);
+        setError(null);
+        const savedTests = getFromStorage('savedTestFlows', []);
+        setTests(savedTests);
+      } catch (err) {
+        setError('Test akışlarını yüklerken bir hata oluştu');
+        console.error('Test yükleme hatası:', err);
+      } finally {
+        setIsLoading(false);
+      }
     };
 
     loadSavedTests();
@@ -342,14 +356,45 @@ const TestList = () => {
   };
 
   const filteredTests = tests.filter(test => {
-    const matchesSearch = test.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         test.description.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = searchTerm === '' || 
+      (test.name && test.name.toLowerCase().includes(searchTerm.toLowerCase())) || 
+      (test.description && test.description.toLowerCase().includes(searchTerm.toLowerCase()));
     const matchesStatus = filterStatus === 'all' || test.status === filterStatus;
     const matchesBrowser = filterBrowser === 'all' || test.browser === filterBrowser;
     const matchesFavorite = !showFavorites || test.isFavorite;
     
     return matchesSearch && matchesStatus && matchesBrowser && matchesFavorite;
   });
+  
+  // Eğer yükleme durumundaysa LoadingState göster
+  if (isLoading) {
+    return (
+      <div className="test-list-page">
+        <div className="page-header">
+          <div className="header-content">
+            <h1>Akışlar</h1>
+            <p>Tüm test senaryolarınızı görüntüleyin ve yönetin</p>
+          </div>
+        </div>
+        <LoadingState message="Test akışları yükleniyor..." />
+      </div>
+    );
+  }
+
+  // Eğer hata varsa ErrorState göster
+  if (error) {
+    return (
+      <div className="test-list-page">
+        <div className="page-header">
+          <div className="header-content">
+            <h1>Akışlar</h1>
+            <p>Tüm test senaryolarınızı görüntüleyin ve yönetin</p>
+          </div>
+        </div>
+        <ErrorState message={error} />
+      </div>
+    );
+  }
 
   return (
     <div className="test-list-page">
@@ -495,7 +540,24 @@ const TestList = () => {
         </div>
 
         <div className="tests-grid">
-          {filteredTests.map((test) => (
+          {filteredTests.length === 0 ? (
+            <NoDataState 
+              title="Kaydedilmiş test akışı yok" 
+              message={showFavorites ? "Henüz bir test akışı oluşturulmamış." : 
+                searchTerm || filterStatus !== 'all' || filterBrowser !== 'all' ? 
+                "Arama veya filtreleme kriterlerinize uygun test bulunamadı." : 
+                "Henüz bir test akışı oluşturulmamış."}
+              action={
+                <button 
+                  className="btn btn-primary" 
+                  onClick={() => navigate('/editor')}
+                >
+                Test Oluştur
+                </button>
+              }
+            />
+          ) : (
+            filteredTests.map((test) => (
             <div key={test.id} className={`test-card card ${selectedTests.has(test.id) ? 'selected' : ''}`}>
               <div className="test-card-header">
                 {isMultiSelectMode && (
@@ -649,7 +711,8 @@ const TestList = () => {
                 </div>
               </div>
             </div>
-          ))}
+          ))
+          )}
         </div>
       </div>
     </div>

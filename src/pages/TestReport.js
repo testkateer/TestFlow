@@ -16,13 +16,17 @@ import {
   Edit,
   BarChart3,
   RefreshCw,
-  ClipboardList
+  ClipboardList,
+  AlertTriangle
 } from 'lucide-react';
 import { downloadTestReport, saveTestReportToStorage } from '../utils/reportUtils';
 import { runTestWithHandling } from '../utils/testRunner';
 import { setTempData } from '../utils/storageUtils';
 import { toast } from '../utils/notificationUtils';
 import { useNotification } from '../contexts/NotificationContext';
+import { getStatusIcon } from '../utils/statusUtils';
+import { formatDateTime } from '../utils/dateUtils';
+import { LoadingState, ErrorState } from '../components';
 import '../styles/main.css';
 
 const TestReport = () => {
@@ -152,15 +156,6 @@ const TestReport = () => {
   };
 
   const errorDetails = getErrorDetails();
-
-  const getStatusIcon = (status) => {
-    switch (status) {
-      case 'success': return <CheckCircle size={16} className="status-icon success" />;
-      case 'error': return <XCircle size={16} className="status-icon error" />;
-      case 'skipped': return <AlertCircle size={16} className="status-icon skipped" />;
-      default: return <AlertCircle size={16} className="status-icon" />;
-    }
-  };
 
   const getStepTypeIcon = (type) => {
     switch (type) {
@@ -310,17 +305,11 @@ const TestReport = () => {
   if (loading) {
     return (
       <div className="test-report-page">
-        <div className="loading-container" style={{
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          height: '400px',
-          flexDirection: 'column',
-          gap: '16px'
-        }}>
-          <div style={{ fontSize: '48px' }}>⏳</div>
-          <p>Rapor yükleniyor...</p>
-        </div>
+        <LoadingState 
+          message="Rapor yükleniyor..." 
+          size="large"
+          icon={<div style={{ fontSize: '48px' }}>⏳</div>}
+        />
       </div>
     );
   }
@@ -329,21 +318,16 @@ const TestReport = () => {
   if (!testDetails) {
     return (
       <div className="test-report-page">
-        <div className="error-container" style={{
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          height: '400px',
-          flexDirection: 'column',
-          gap: '16px'
-        }}>
-          <div style={{ fontSize: '48px' }}>❌</div>
-          <h2>Rapor Bulunamadı</h2>
-          <p>Bu ID'ye sahip bir test raporu bulunamadı.</p>
-          <button className="btn btn-primary" onClick={() => navigate('/reports')}>
-            Raporlara Geri Dön
-          </button>
-        </div>
+        <ErrorState 
+          message="Bu ID'ye sahip bir test raporu bulunamadı." 
+          size="large"
+          icon={<div style={{ fontSize: '48px' }}>❌</div>}
+          action={
+            <button className="btn btn-primary" onClick={() => navigate('/reports')}>
+              Raporlara Geri Dön
+            </button>
+          }
+        />
       </div>
     );
   }

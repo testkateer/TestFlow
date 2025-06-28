@@ -14,6 +14,7 @@ import { getFromStorage} from '../utils/storageUtils';
 import { clearExpiredRunningTests } from '../utils/testRunner';
 import { getStatusIcon, getStatusText } from '../utils/statusUtils';
 import { formatRelativeTime } from '../utils/dateUtils';
+import { ErrorState, NoDataState } from '../components';
 import '../styles/main.css';
 
 const Dashboard = () => {
@@ -218,7 +219,6 @@ const Dashboard = () => {
   // Veri yoksa boş durum mesajı göster
   const hasData = testSummary.length > 0 || recentTests.length > 0 || scheduledTests.length > 0;
 
-
   if (error) {
     return (
       <div className="dashboard">
@@ -226,10 +226,7 @@ const Dashboard = () => {
           <h1>Dashboard</h1>
           <p>Test otomasyonu platform genel durumu</p>
         </div>
-        <div className="error-container">
-          <AlertCircle size={24} className="error-icon" />
-          <p>{error}</p>
-        </div>
+        <ErrorState message={error} />
       </div>
     );
   }
@@ -242,21 +239,6 @@ const Dashboard = () => {
           <p>Test otomasyonu platform genel durumu</p>
         </div>
       </div>
-
-      {/* Veri yoksa bilgilendirme mesajı */}
-      {!hasData && (
-        <div className="no-data-container">
-          <AlertCircle size={48} className="no-data-icon" />
-          <h3>Henüz test verisi yok</h3>
-          <p>Dashboard'ı görmek için önce bazı testler oluşturun ve çalıştırın.</p>
-          <button 
-            className="btn btn-primary" 
-            onClick={() => window.location.href = '/editor'}
-          >
-            Test Oluştur
-          </button>
-        </div>
-      )}
 
       {/* Test Özeti Cards */}
       {testSummary.length > 0 && (
@@ -275,23 +257,23 @@ const Dashboard = () => {
 
       <div className="dashboard-content">
         {/* Son Testler */}
-        {recentTests.length > 0 && (
-          <div className="dashboard-section">
-            <div className="card">
-              <div className="section-header">
-                <h2>
-                  <BarChart3 size={18} />
-                  Son Test Çalıştırmaları
-                </h2>
-                <button 
-                  className="btn btn-secondary"
-                  onClick={() => window.location.href = '/reports'}
-                >
-                  Tümünü Gör
-                </button>
-              </div>
-              <div className="test-list">
-                {recentTests.map((test) => (
+        <div className="dashboard-section">
+          <div className="card">
+            <div className="section-header">
+              <h2>
+                <BarChart3 size={18} />
+                Son Test Çalıştırmaları
+              </h2>
+              <button 
+                className="btn btn-secondary"
+                onClick={() => window.location.href = '/reports'}
+              >
+                Tümünü Gör
+              </button>
+            </div>
+            <div className="test-list">
+              {recentTests.length > 0 ? (
+                recentTests.map((test) => (
                   <div key={test.id} className="test-item">
                     <div className="test-info">
                       <div 
@@ -311,30 +293,44 @@ const Dashboard = () => {
                       </span>
                     </div>
                   </div>
-                ))}
-              </div>
+                ))
+              ) : (
+                <NoDataState
+                  title="Henüz test çalıştırılmamış"
+                  message="Test sonuçlarını görmek için önce bazı testler çalıştırın."
+                  size="small"
+                  action={
+                    <button 
+                      className="btn btn-primary" 
+                      onClick={() => window.location.href = '/tests'}
+                    >
+                      Testlere Git
+                    </button>
+                  }
+                />
+              )}
             </div>
           </div>
-        )}
+        </div>
 
         {/* Planlanmış Testler */}
-        {scheduledTests.length > 0 && (
-          <div className="dashboard-section">
-            <div className="card">
-              <div className="section-header">
-                <h2>
-                  <Calendar size={18} />
-                  Kaydedilmiş Test Akışları
-                </h2>
-                <button 
-                  className="btn btn-secondary"
-                  onClick={() => window.location.href = '/scheduling'}
-                >
-                  Yönet
-                </button>
-              </div>
-              <div className="scheduled-list">
-                {scheduledTests.map((test) => (
+        <div className="dashboard-section">
+          <div className="card">
+            <div className="section-header">
+              <h2>
+                <Calendar size={18} />
+                Kaydedilmiş Test Akışları
+              </h2>
+              <button 
+                className="btn btn-secondary"
+                onClick={() => window.location.href = '/scheduling'}
+              >
+                Yönet
+              </button>
+            </div>
+            <div className="scheduled-list">
+              {scheduledTests.length > 0 ? (
+                scheduledTests.map((test) => (
                   <div key={test.id} className="scheduled-item">
                     <div className="scheduled-info">
                       <div 
@@ -351,11 +347,25 @@ const Dashboard = () => {
                       <span>{test.nextRun}</span>
                     </div>
                   </div>
-                ))}
-              </div>
+                ))
+              ) : (
+                <NoDataState
+                  title="Kaydedilmiş test akışı yok"
+                  message="Henüz bir test akışı oluşturulmamış."
+                  size="small"
+                  action={
+                    <button 
+                      className="btn btn-primary" 
+                      onClick={() => window.location.href = '/editor'}
+                    >
+                      Test Oluştur
+                    </button>
+                  }
+                />
+              )}
             </div>
           </div>
-        )}
+        </div>
       </div>
 
     </div>
