@@ -15,7 +15,7 @@ const NoDataState = ({
       className={containerClass}
       style={{
         border: '2px dashed var(--border-primary)',
-        borderRadius: 'var(--radius-lg)',
+        borderRadius: 'var(--radius-2xl)',
         backgroundColor: 'var(--bg-secondary)',
         padding: '2rem',
         margin: '2rem 0',

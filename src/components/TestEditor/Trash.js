@@ -14,7 +14,7 @@ const Trash = ({ isDraggingOver }) => {
     color: isDraggingOver ? 'var(--color-error)' : 'var(--text-muted)',
     textAlign: 'center',
     transition: 'all var(--transition-normal)',
-    borderRadius: 'var(--radius-lg)',
+    borderRadius: 'var(--radius-2xl)',
     transform: isDraggingOver ? 'scale(1.05)' : 'scale(1)',
     backgroundColor: isDraggingOver ? 'var(--color-error-light)' : 'transparent'
   };
