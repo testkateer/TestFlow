@@ -18,19 +18,6 @@ const DroppableFlowCanvas = ({ steps, onSelect, onRemove, selectedStep }) => {
     transition: 'background-color 0.2s ease',
   };
 
-  const endDropStyle = {
-    minHeight: '40px',
-    border: isOverEnd ? '2px dashed var(--color-primary)' : '2px dashed transparent',
-    borderRadius: 'var(--radius-md)',
-    margin: '8px 0',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    transition: 'all 0.2s ease',
-    color: isOverEnd ? 'var(--color-primary)' : 'var(--text-muted)',
-    fontSize: 'var(--text-sm)',
-  };
-
   return (
     <div ref={setNodeRef} className="flow-container" style={droppableStyle}>
       {steps.length === 0 ? (
@@ -60,8 +47,18 @@ const DroppableFlowCanvas = ({ steps, onSelect, onRemove, selectedStep }) => {
                 )}
               </React.Fragment>
             ))}
-            <div ref={setEndDropRef} style={endDropStyle}>
-              {isOverEnd ? "Sona ekle" : ""}
+            <div 
+              ref={setEndDropRef} 
+              className={`flow-end-zone ${isOverEnd ? 'drag-over' : ''}`}
+            >
+              {isOverEnd ? (
+                <>
+                  <Plus size={20} style={{ marginRight: '8px' }} />
+                  "Sona ekle"
+                </>
+              ) : (
+                "Buraya sürükleyerek sona ekleyin"
+              )}
             </div>
           </div>
         </SortableContext>

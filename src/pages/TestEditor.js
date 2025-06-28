@@ -341,7 +341,7 @@ const TestEditor = () => {
       }
     }
   };
-  
+
   const saveTestFlow = useCallback(async () => {
     const validationResult = validateTestFlow({ testName, steps });
     if (!validationResult.isValid) {
@@ -365,12 +365,12 @@ const TestEditor = () => {
       } else {
         savedTests.push(newTest);
       }
-      
+
       setToStorage('savedTestFlows', savedTests);
       toast.saveSuccess(testName);
       
       resetEditorState({ testName, steps });
-
+      
     } catch (error) {
       toast.error('Test akışı kaydedilirken hata oluştu.');
       console.error("Save error:", error);
@@ -437,30 +437,30 @@ const TestEditor = () => {
       onDragOver={handleDragOver}
       onDragEnd={handleDragEnd}
     >
-      <div className="page-container">
-        <div className="editor-header">
-          <div className="header-content">
-            <div className="test-name-wrapper">
-              <Edit size={18} className="edit-icon" />
-              <input 
-                type="text" 
-                value={testName} 
-                onChange={(e) => setTestNameState(e.target.value)}
-                className="test-name-input"
-                placeholder="Test adı girin..."
-              />
-              {testName !== '' && (
-                <button 
-                  className="test-name-clear-btn" 
-                  onClick={() => setTestNameState('')}
-                  title="Test adını temizle"
-                >
-                  <X size={16} />
-                </button>
-              )}
-            </div>
+    <div className="page-container">
+      <div className="editor-header">
+        <div className="header-content">
+          <div className="test-name-wrapper">
+            <Edit size={18} className="edit-icon" />
+            <input 
+              type="text" 
+              value={testName} 
+              onChange={(e) => setTestNameState(e.target.value)}
+              className="test-name-input"
+              placeholder="Test adı girin..."
+            />
+            {testName !== '' && (
+              <button 
+                className="test-name-clear-btn" 
+                onClick={() => setTestNameState('')}
+                title="Test adını temizle"
+              >
+                <X size={16} />
+              </button>
+            )}
           </div>
-          <div className="header-actions">
+        </div>
+        <div className="header-actions">
             <button className="btn btn-secondary" onClick={undo} disabled={!canUndo} title="Geri Al"><Undo size={16} /> Geri Al</button>
             <button className="btn btn-secondary" onClick={redo} disabled={!canRedo} title="İleri Al"><Redo size={16} /> İleri Al</button>
             <button className="btn btn-secondary" onClick={handleImportTestFlow}><Upload size={16} /> İçe Aktar</button>
@@ -468,23 +468,23 @@ const TestEditor = () => {
             <button className="btn btn-primary" onClick={saveTestFlow} disabled={!hasUnsavedChanges || steps.length === 0}><Save size={16} /> Kaydet</button>
             <button className={`btn btn-success ${isRunning ? 'disabled' : ''}`} onClick={runTest} disabled={isRunning || steps.length === 0}><Play size={16} /> {isRunning ? 'Çalışıyor...' : 'Çalıştır'}</button>
           </div>
-        </div>
+      </div>
 
-        <div className="editor-content">
-          <div className="steps-panel card">
+      <div className="editor-content">
+        <div className="steps-panel card">
             <h3><Plus size={16} style={{ marginRight: '6px', verticalAlign: 'middle' }} />Test Adımları</h3>
-            <div className="step-types">
+          <div className="step-types">
               {stepTypes.map(stepType => (
                 <DraggableStep key={stepType.id} stepType={stepType} />
               ))}
-            </div>
+                  </div>
             <Trash isDraggingOver={isOverTrash} />
-          </div>
+        </div>
 
-          <div className="flow-panel card">
-            <div className="flow-header">
+        <div className="flow-panel card">
+          <div className="flow-header">
               <h3><RefreshCw size={16} style={{ marginRight: '6px', verticalAlign: 'middle' }} />Test Akışı</h3>
-              <span className="step-count">{steps.length} adım</span>
+            <span className="step-count">{steps.length} adım</span>
             </div>
             <DroppableFlowCanvas
               steps={steps}
@@ -493,23 +493,26 @@ const TestEditor = () => {
               selectedStep={selectedStep}
             />
           </div>
-
+          
           <div className="config-panel card">
             <h3><Edit size={16} style={{ marginRight: '6px', verticalAlign: 'middle' }} />Adım Detayları</h3>
             {renderSelectedStepConfig()}
           </div>
         </div>
-      </div>
+              </div>
       <DragOverlay dropAnimation={dropAnimation}>
         {activeId ? (
           activeStepForOverlay ? (
             <SortableStep 
               step={activeStepForOverlay} 
               index={steps.findIndex(s => s.id === activeId)}
-              onSelect={() => {}} onRemove={() => {}} isSelected={false} 
+              onSelect={() => {}} 
+              onRemove={() => {}} 
+              isSelected={false}
+              isDragOverlay={true}
             />
           ) : activeStepTypeForOverlay ? (
-            <div className="step-type" style={{ pointerEvents: 'none', boxShadow: 'var(--shadow-lg)' }}>
+            <div className="step-type dragging-overlay" style={{ pointerEvents: 'none', boxShadow: 'var(--shadow-xl)', transform: 'rotate(2deg)' }}>
               <activeStepTypeForOverlay.icon size={20} />
               <div className="step-type-info">
                 <span className="step-type-name">{activeStepTypeForOverlay.name}</span>
