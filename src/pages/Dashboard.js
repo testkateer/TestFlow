@@ -255,8 +255,10 @@ const Dashboard = () => {
     return (
       <div className="dashboard">
         <div className="page-header">
-          <h1>Dashboard</h1>
-          <p>Test otomasyonu platform genel durumu</p>
+          <div className="header-content">
+            <h1>Dashboard</h1>
+            <p>Test otomasyonu platform genel durumu</p>
+          </div>
         </div>
         <div className="loading-container">
           <RefreshCw className="loading-spinner" size={24} />
@@ -346,7 +348,7 @@ const Dashboard = () => {
                         onClick={() => navigateToTestReport(test.id)}
                         title="Test raporunu görüntüle"
                       >
-                        {test.name}
+                        {test.name} <span className="test-id-display">{test.id}</span>
                       </div>
                       <div className="test-timestamp">{test.timestamp}</div>
                     </div>
@@ -391,7 +393,7 @@ const Dashboard = () => {
                         onClick={() => navigateToTestEditor(test.id)}
                         title="Test akışını düzenle"
                       >
-                        {test.name}
+                        {test.name} <span className="test-id-display">{test.id}</span>
                       </div>
                       <div className="scheduled-frequency">{test.frequency}</div>
                     </div>

@@ -93,8 +93,10 @@ const Settings = () => {
   return (
     <div className="settings-page">
       <div className="page-header">
-        <h1>Ayarlar</h1>
-        <p>Kişisel tercihlerinizi ve sistem ayarlarınızı yönetin</p>
+        <div className="header-content">
+          <h1>Ayarlar</h1>
+          <p>Kişisel tercihlerinizi ve sistem ayarlarınızı yönetin</p>
+        </div>
       </div>
 
       <div className="settings-layout">
