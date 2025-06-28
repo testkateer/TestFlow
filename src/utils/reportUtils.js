@@ -1,6 +1,6 @@
 import { getFromStorage, setToStorage } from './storageUtils';
 import { formatDate, formatTime } from './dateUtils';
-import { globalNotify } from './globalNotification';
+import { toast } from './notifications';
 
 // Test raporu kaydetme - ortak fonksiyon
 export const saveTestReportToStorage = (testResult, testData) => {
@@ -48,7 +48,6 @@ export const saveTestReportToStorage = (testResult, testData) => {
     // localStorage'a kaydet - storage utility kullan
     setToStorage('testReports', existingReports);
     
-    console.log('Test raporu kaydedildi:', newReport);
     return newReport;
   } catch (error) {
     console.error('Test raporu kaydetme hatası:', error);
@@ -105,9 +104,10 @@ export const downloadTestReport = (report) => {
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
 
-    console.log('Test raporu indirildi:', report.testName);
+    return report;
   } catch (error) {
     console.error('Rapor indirme hatası:', error);
-    globalNotify.reportDownloadError();
+    toast.reportDownloadError();
+    return null;
   }
 }; 

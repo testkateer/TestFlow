@@ -1,9 +1,8 @@
 import { useEffect } from 'react';
 import { useNotification } from '../contexts/NotificationContext';
 import { useModal } from '../contexts/ModalContext';
-import { setNotificationContext } from '../utils/notificationUtils';
+import { setNotificationContext } from '../utils/notifications';
 import { setModalContext } from '../utils/modalUtils';
-import { setGlobalNotification } from '../utils/globalNotification';
 
 const ContextSetup = () => {
   const notification = useNotification();
@@ -12,7 +11,6 @@ const ContextSetup = () => {
   useEffect(() => {
     if (notification) {
       setNotificationContext(notification);
-      setGlobalNotification(notification);
     }
     if (modal) {
       setModalContext(modal);

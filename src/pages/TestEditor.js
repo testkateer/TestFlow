@@ -26,8 +26,7 @@ import { runTestWithHandling } from '../utils/testRunner';
 import { getFromStorage, setToStorage, setTempData } from '../utils/storageUtils';
 import { validateTestFlow } from '../utils/validationUtils';
 import { saveTestReportToStorage } from '../utils/reportUtils';
-import { toast, notify } from '../utils/notificationUtils';
-import { confirmActions } from '../utils/modalUtils';
+import { toast} from '../utils/notifications';
 import '../styles/main.css';
 import { useNotification } from '../contexts/NotificationContext';
 import { useModal } from '../contexts/ModalContext';
@@ -223,9 +222,7 @@ const TestEditor = () => {
   const handleExportTestFlow = () => {
     try {
       exportTestFlow({ testName, steps });
-      notify.saveSuccess(`${testName} dışa aktarıldı`);
     } catch (error) {
-      notify.saveError('Test dışa aktarma');
     }
   };
 
@@ -233,7 +230,6 @@ const TestEditor = () => {
     importTestFlow(stepTypes, (importedData) => {
       resetEditorState({ testName: importedData.testName, steps: importedData.steps });
       setSelectedStep(null);
-      notify.saveSuccess('Test akışı içe aktarıldı');
     });
   };
 
@@ -262,30 +258,36 @@ const TestEditor = () => {
       const existingTestIndex = savedTests.findIndex(test => test.name === testName);
       
       if (existingTestIndex !== -1) {
-        const shouldUpdate = await confirmActions.save(`"${testName}" adında bir test zaten mevcut. Güncellemek ister misiniz?`);
-        if (shouldUpdate) {
+        const shouldUpdate = await showTripleConfirm({
+          title: `"${testName}" adında bir test zaten mevcut. Güncellemek ister misiniz?`,
+          message: `"${testName}" adında bir test zaten mevcut. Güncellemek ister misiniz?`,
+          saveText: 'Evet',
+          exitText: 'Hayır',
+          cancelText: 'İptal'
+        });
+        if (shouldUpdate === 'save') {
           savedTests[existingTestIndex] = { ...savedTests[existingTestIndex], ...newTest, id: savedTests[existingTestIndex].id, updatedAt: new Date().toISOString() };
-          notify.updateSuccess(testName);
-        } else {
+          toast.updateSuccess(testName);
+        } else if (shouldUpdate === 'exit') {
           return;
         }
       } else {
         savedTests.push(newTest);
-        notify.saveSuccess(testName);
+        toast.saveSuccess(testName);
       }
 
       setToStorage('savedTestFlows', savedTests);
       resetEditorState({ testName, steps });
       
     } catch (error) {
-      notify.saveError(testName);
+      toast.saveError(testName);
     }
-  }, [testName, steps, resetEditorState]);
+  }, [testName, steps, resetEditorState, showTripleConfirm]);
 
   saveTestFlowRef.current = saveTestFlow;
 
   return (
-    <div className="test-editor">
+    <div className="page-container">
       <div className="editor-header">
         <div className="header-content">
           <div className="test-name-wrapper">

@@ -2,12 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   Search,
-  Calendar, 
-  Clock, 
-  CheckCircle, 
-  XCircle, 
+  CheckCircle,
+  XCircle,
   AlertCircle,
-  Eye,
   Download,
   BarChart3,
   X
@@ -116,7 +113,7 @@ const Reports = () => {
   };
 
   return (
-    <div className="reports-page">
+    <div className="page-container">
       <PageHeader 
         title="Raporlar" 
         subtitle="Tüm test çalıştırma sonuçlarını görüntüleyin ve analiz edin"
@@ -263,14 +260,12 @@ const Reports = () => {
                     </td>
                     <td>
                       <div className="duration">
-                        <Clock size={14} />
                         {report.duration || '-'}
                       </div>
                     </td>
                     <td>
                       <div className="datetime">
                         <div className="date">
-                          <Calendar size={14} />
                           {reportDate.toLocaleDateString('tr-TR')}
                         </div>
                         <div className="time">{reportDate.toLocaleTimeString('tr-TR')}</div>
@@ -287,14 +282,12 @@ const Reports = () => {
                           className="btn btn-primary btn-sm"
                           onClick={() => handleViewReport(report.id)}
                         >
-                          <Eye size={14} />
                           Görüntüle
                         </button>
                         <button 
                           className="btn btn-secondary btn-sm"
                           onClick={() => handleDownloadReport(report)}
                         >
-                          <Download size={14} />
                           İndir
                         </button>
                       </div>
@@ -305,6 +298,7 @@ const Reports = () => {
               </tbody>
             </table>
           ) : (
+            <div style={{maxWidth : '96%', margin : '0 auto'}}>
             <NoDataState 
               title="Henüz test çalıştırılmamış" 
               message={searchTerm || filterStatus !== 'all' || filterDate !== 'all' ? 
@@ -313,6 +307,7 @@ const Reports = () => {
               size="small"
               icon={<AlertCircle size={40} className="no-data-icon" />}
             />
+            </div>
           )}
         </div>
         {/* Pagination Controls */}

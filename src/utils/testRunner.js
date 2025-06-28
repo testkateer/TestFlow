@@ -1,4 +1,4 @@
-import { globalNotify, globalToast } from './globalNotification';
+import { toast } from './notifications';
 
 // Test çalıştırma işlemleri için ortak fonksiyonlar
 
@@ -82,9 +82,9 @@ export const runTestWithHandling = async (testData, options = {}) => {
     
     // Hata mesajını göster
     if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
-      globalNotify.serverError();
+      toast.serverError();
     } else {
-      globalNotify.testRunError(error.message);
+      toast.testRunError(error.message);
     }
     
     return errorResult;
@@ -150,12 +150,12 @@ export const showSuccessMessage = (analysisResult) => {
   const { successfulSteps, totalSteps, completedSteps, isFullyCompleted } = analysisResult;
   
   if (isFullyCompleted && analysisResult.isFullySuccessful) {
-    globalToast.success(`Test başarıyla tamamlandı! ${successfulSteps}/${totalSteps} adım başarılı`);
+    toast.success(`Test başarıyla tamamlandı! ${successfulSteps}/${totalSteps} adım başarılı`);
   } else if (!isFullyCompleted) {
-    globalToast.warning(`Test tamamlanamadı! ${completedSteps}/${totalSteps} adım tamamlandı. Başarılı: ${successfulSteps}`);
+    toast.warning(`Test tamamlanamadı! ${completedSteps}/${totalSteps} adım tamamlandı. Başarılı: ${successfulSteps}`);
   } else {
     const errorMessage = analysisResult.result.error ? ` Hata: ${analysisResult.result.error}` : '';
-    globalToast.error(`Test başarısız! ${successfulSteps}/${totalSteps} adım başarılı${errorMessage}`);
+    toast.error(`Test başarısız! ${successfulSteps}/${totalSteps} adım başarılı${errorMessage}`);
   }
 };
 
@@ -165,7 +165,7 @@ export const showErrorMessage = (analysisResult) => {
     showSuccessMessage(analysisResult); // Tamamlanmış ama başarısız
   } else {
     const { successfulSteps, totalSteps, completedSteps } = analysisResult;
-    globalToast.warning(`Test tamamlanamadı! ${completedSteps}/${totalSteps} adım tamamlandı. Başarılı: ${successfulSteps}`);
+    toast.warning(`Test tamamlanamadı! ${completedSteps}/${totalSteps} adım tamamlandı. Başarılı: ${successfulSteps}`);
   }
 };
 
@@ -183,7 +183,7 @@ export const runSingleStep = async (step, browser = 'chromium') => {
       if (response.status === 500) {
         const errorData = await response.json();
         if (errorData.error?.includes('ECONNREFUSED') || errorData.error?.includes('connect')) {
-          globalNotify.serverError();
+          toast.serverError();
           return { success: false, error: 'Server bağlantı hatası' };
         }
       }
@@ -195,9 +195,9 @@ export const runSingleStep = async (step, browser = 'chromium') => {
   } catch (error) {
     console.error('Test çalıştırma hatası:', error);
     if (error.message.includes('Failed to fetch') || error.message.includes('ECONNREFUSED')) {
-      globalNotify.serverError();
+      toast.serverError();
     } else {
-      globalNotify.testRunError(error.message);
+      toast.testRunError(error.message);
     }
     return { success: false, error: error.message };
   }
@@ -261,12 +261,12 @@ export const runTestFlow = async (steps, browser = 'chromium', onStepComplete, o
 
     // Sonuç mesajını göster
     if (successfulSteps === totalSteps) {
-      globalToast.success(`Test başarıyla tamamlandı! ${successfulSteps}/${totalSteps} adım başarılı`);
+      toast.success(`Test başarıyla tamamlandı! ${successfulSteps}/${totalSteps} adım başarılı`);
     } else if (completedSteps < totalSteps) {
-      globalToast.warning(`Test tamamlanamadı! ${completedSteps}/${totalSteps} adım tamamlandı. Başarılı: ${successfulSteps}`);
+      toast.warning(`Test tamamlanamadı! ${completedSteps}/${totalSteps} adım tamamlandı. Başarılı: ${successfulSteps}`);
     } else {
       const errorMessage = analysisResult.result?.error ? ` Hata: ${analysisResult.result.error}` : '';
-      globalToast.error(`Test başarısız! ${successfulSteps}/${totalSteps} adım başarılı${errorMessage}`);
+      toast.error(`Test başarısız! ${successfulSteps}/${totalSteps} adım başarılı${errorMessage}`);
     }
 
     return {
@@ -298,7 +298,7 @@ export const runTestFlow = async (steps, browser = 'chromium', onStepComplete, o
       });
     }
 
-    globalToast.warning(`Test tamamlanamadı! ${completedSteps}/${totalSteps} adım tamamlandı. Başarılı: ${successfulSteps}`);
+    toast.warning(`Test tamamlanamadı! ${completedSteps}/${totalSteps} adım tamamlandı. Başarılı: ${successfulSteps}`);
 
     return {
       success: false,
@@ -333,22 +333,9 @@ export const analyzeTestResults = (results) => {
 export const addActiveRunningTest = (testId, testName) => {
   try {
     const activeTests = JSON.parse(localStorage.getItem('activeRunningTests') || '[]');
-    
-    // Aynı test zaten çalışıyorsa ekleme
-    if (activeTests.some(test => test.id === testId)) {
-      return;
-    }
-    
-    const newTest = {
-      id: testId,
-      name: testName,
-      startTime: new Date().toISOString()
-    };
-    
+    const newTest = { id: testId, name: testName, timestamp: Date.now() };
     activeTests.push(newTest);
     localStorage.setItem('activeRunningTests', JSON.stringify(activeTests));
-    
-    console.log('Aktif test eklendi:', newTest);
   } catch (error) {
     console.error('Aktif test ekleme hatası:', error);
   }
@@ -360,8 +347,6 @@ export const removeActiveRunningTest = (testId) => {
     const filteredTests = activeTests.filter(test => test.id !== testId);
     
     localStorage.setItem('activeRunningTests', JSON.stringify(filteredTests));
-    
-    console.log('Aktif test kaldırıldı:', testId);
   } catch (error) {
     console.error('Aktif test kaldırma hatası:', error);
   }

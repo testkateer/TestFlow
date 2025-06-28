@@ -4,7 +4,6 @@
 export function getFromStorage(key, defaultValue = null) {
   try {
     const data = localStorage.getItem(key);
-    console.log(`Storage data for key '${key}':`, data ? 'Found' : 'Not found');
     return data ? JSON.parse(data) : defaultValue;
   } catch (error) {
     console.error(`Error reading from localStorage for key '${key}':`, error);

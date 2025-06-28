@@ -1,69 +1,56 @@
-// Notification utility functions for easy access across the app
-
-// These will be set by the NotificationProvider
 let notificationContext = null;
 
 export const setNotificationContext = (context) => {
   notificationContext = context;
 };
 
-// Toast notification utilities
 export const toast = {
   success: (message, options) => {
     if (notificationContext) {
       return notificationContext.showSuccess(message, options);
     }
-    console.warn('Notification context not available');
+    return null;
   },
   
   error: (message, options) => {
     if (notificationContext) {
       return notificationContext.showError(message, options);
     }
-    console.warn('Notification context not available');
+    return null;
   },
   
   warning: (message, options) => {
     if (notificationContext) {
       return notificationContext.showWarning(message, options);
     }
-    console.warn('Notification context not available');
+    return null;
   },
   
   info: (message, options) => {
     if (notificationContext) {
       return notificationContext.showInfo(message, options);
     }
-    console.warn('Notification context not available');
+    return null;
   },
 
-  // Custom toast with full options
   show: (message, type = 'info', options) => {
     if (notificationContext) {
       return notificationContext.addToast(message, type, options);
     }
-    console.warn('Notification context not available');
+    return null;
   },
 
-  // Remove specific toast
   remove: (id) => {
     if (notificationContext) {
       return notificationContext.removeToast(id);
     }
-    console.warn('Notification context not available');
   },
 
-  // Clear all toasts
   clear: () => {
     if (notificationContext) {
       return notificationContext.clearAll();
     }
-    console.warn('Notification context not available');
-  }
-};
-
-// Common notification patterns - use functions instead of object methods to avoid hoisting issues
-export const notify = {
+  },
   // Success patterns
   saveSuccess: (itemName = 'Öğe') => {
     return toast.success(`${itemName} başarıyla kaydedildi!`);
@@ -114,5 +101,42 @@ export const notify = {
   
   copied: () => {
     return toast.info('Panoya kopyalandı!', { duration: 2000 });
+  },
+  
+  canceled: (operation = 'İşlem') => {
+    return toast.info(`${operation} iptal edildi.`, { duration: 3000 });
+  },
+
+  // Test specific notifications
+  exportSuccess: (fileName) => {
+    return toast.success(`Test akışı başarıyla dışa aktarıldı! Dosya: ${fileName}`);
+  },
+  
+  exportError: (error) => {
+    return toast.error(`Dışa aktarma hatası: ${error}`);
+  },
+  
+  importSuccess: (testName, stepCount) => {
+    return toast.success(`Test akışı içe aktarıldı! ${testName} - ${stepCount} adım`);
+  },
+  
+  importError: (error) => {
+    return toast.error(`İçe aktarma hatası: ${error}. Dosyanın geçerli bir test akışı JSON dosyası olduğundan emin olun.`);
+  },
+  
+  importCanceled: () => {
+    return toast.info('Test içeri aktarma işlemi iptal edildi', { duration: 3000 });
+  },
+  
+  serverError: () => {
+    return toast.error('Server bağlantı hatası! Server\'ın çalıştığından emin olun (npm run server).');
+  },
+  
+  testRunError: (error) => {
+    return toast.error(`Test çalıştırma hatası: ${error}`);
+  },
+  
+  reportDownloadError: () => {
+    return toast.error('Rapor indirilirken bir hata oluştu.');
   }
 }; 

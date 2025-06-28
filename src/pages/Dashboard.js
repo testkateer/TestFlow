@@ -7,7 +7,6 @@ import {
   CheckCircle,
   XCircle,
   AlertCircle,
-  RefreshCw,
   BarChart3,
   Percent
 } from 'lucide-react';
@@ -224,7 +223,7 @@ const Dashboard = () => {
 
   if (error) {
     return (
-      <div className="dashboard">
+      <div className="page-container">
         <PageHeader 
           title="Dashboard" 
           subtitle="Test otomasyonu platform genel durumu" 
@@ -235,7 +234,7 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="dashboard">
+    <div className="page-container">
       <PageHeader 
         title="Dashboard" 
         subtitle="Test otomasyonu platform genel durumu" 

@@ -2158,6 +2158,11 @@ h1 svg, h2 svg, h3 svg, h4 svg, h5 svg, h6 svg {
    PAGE LAYOUT PATTERNS
    ============================================ */
 
+.page-container{
+  max-width: 96%;
+  margin: 0 auto;
+}
+
 /* Page Header System */
 .page-header {
   margin-bottom: var(--space-8);
@@ -4119,12 +4124,6 @@ h1 svg, h2 svg, h3 svg, h4 svg, h5 svg, h6 svg {
 
 .page-header .header-actions .btn.active:hover {
   background: var(--color-primary-dark);
-}
-
-/* Test Report Styles */
-.test-report-page {
-  max-width: 1400px;
-  margin: 0 auto;
 }
 
 .report-header {

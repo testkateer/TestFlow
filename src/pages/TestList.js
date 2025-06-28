@@ -23,7 +23,7 @@ import { getFromStorage, setToStorage,  setTempData } from '../utils/storageUtil
 import { getStatusText, getBrowserIcon } from '../utils/statusUtils';
 import { formatDateTime} from '../utils/dateUtils';
 import { saveTestReportToStorage, calculateTestDuration } from '../utils/reportUtils';
-import { toast, notify } from '../utils/notificationUtils';
+import { toast } from '../utils/notifications';
 import { confirmActions, modal, confirm } from '../utils/modalUtils';
 import { LoadingState, ErrorState, NoDataState, PageHeader } from '../components';
 import '../styles/main.css';
@@ -97,7 +97,7 @@ const TestList = () => {
       setTests(updatedTests);
       setToStorage('savedTestFlows', updatedTests);
       setOpenDropdownId(null);
-      notify.deleteSuccess(testName);
+      toast.deleteSuccess(testName);
     }
   };
 
@@ -199,10 +199,10 @@ const TestList = () => {
       // TestEditor ile aynı dosya adlandırma mantığı - fileName parametresi geçmeyelim
       exportTestFlow(testData);
       setOpenDropdownId(null);
-      notify.saveSuccess(`${test.name} dışa aktarıldı`);
+      toast.saveSuccess(`${test.name} dışa aktarıldı`);
     } catch (error) {
       console.error('Export hatası:', error);
-      notify.saveError('Test dışa aktarma');
+      toast.saveError('Test dışa aktarma');
     }
   };
 
@@ -232,7 +232,7 @@ const TestList = () => {
       setToStorage('savedTestFlows', updatedTests);
       
       setOpenDropdownId(null);
-      notify.saveSuccess(`${test.name} kopyalandı`);
+      toast.saveSuccess(`${test.name} kopyalandı`);
       
       // Kopyalanan testi düzenleme modunda aç
       setTimeout(() => {
@@ -241,7 +241,7 @@ const TestList = () => {
       
     } catch (error) {
       console.error('Kopyalama hatası:', error);
-      notify.saveError('Test kopyalama');
+      toast.saveError('Test kopyalama');
     }
   };
 
@@ -259,7 +259,7 @@ const TestList = () => {
     
     const test = tests.find(t => t.id === testId);
     const action = test.isFavorite ? 'favorilerden çıkarıldı' : 'favorilere eklendi';
-    notify.saveSuccess(`${test.name} ${action}`);
+    toast.saveSuccess(`${test.name} ${action}`);
   };
 
   // Çoklu seçim işlemleri
@@ -292,7 +292,7 @@ const TestList = () => {
       const updatedTests = tests.filter(test => !selectedTests.has(test.id));
       setTests(updatedTests);
       setToStorage('savedTestFlows', updatedTests);
-      notify.deleteSuccess(`${selectedTests.size} test silindi`);
+      toast.deleteSuccess(`${selectedTests.size} test silindi`);
       clearSelection();
     }
   };
@@ -311,11 +311,11 @@ const TestList = () => {
         exportTestFlow(testData);
       });
       
-      notify.saveSuccess(`${selectedTests.size} test dışarı aktarıldı`);
+      toast.saveSuccess(`${selectedTests.size} test dışarı aktarıldı`);
       clearSelection();
     } catch (error) {
       console.error('Toplu export hatası:', error);
-      notify.saveError('Toplu dışarı aktarma');
+      toast.saveError('Toplu dışarı aktarma');
     }
   };
 
@@ -347,11 +347,11 @@ const TestList = () => {
       setTests(updatedTests);
       setToStorage('savedTestFlows', updatedTests);
       
-      notify.saveSuccess(`${selectedTests.size} test kopyalandı`);
+      toast.saveSuccess(`${selectedTests.size} test kopyalandı`);
       clearSelection();
     } catch (error) {
       console.error('Toplu kopyalama hatası:', error);
-      notify.saveError('Toplu kopyalama');
+      toast.saveError('Toplu kopyalama');
     }
   };
 
@@ -383,6 +383,7 @@ const TestList = () => {
         let importedTests = [];
         let errorCount = 0;
         
+        // Her dosya için işleme yap
         for (let i = 0; i < files.length; i++) {
           const file = files[i];
           try {
@@ -433,7 +434,7 @@ const TestList = () => {
           setTests(updatedTests);
           setToStorage('savedTestFlows', updatedTests);
           
-          notify.saveSuccess(`${nonConflictingTests.length} test içeri aktarıldı`);
+          toast.saveSuccess(`${nonConflictingTests.length} test içeri aktarıldı`);
         }
         
         // Çakışan testler varsa modal göster
@@ -443,12 +444,12 @@ const TestList = () => {
         }
         
         if (errorCount > 0) {
-          notify.saveError(`${errorCount} dosya içeri aktarılamadı`);
+          toast.saveError(`${errorCount} dosya içeri aktarılamadı`);
         }
       };
     } catch (error) {
       console.error('İçeri aktarma hatası:', error);
-      notify.saveError('Test içeri aktarma');
+      toast.saveError('Test içeri aktarma');
     }
   };
 
@@ -469,7 +470,12 @@ const TestList = () => {
         confirmVariant: 'warning',
         showCloseButton: true,
         closeOnEsc: true,
-        closeOnOverlay: true
+        closeOnOverlay: true,
+        onClose: () => {
+          // X butonuna basıldığında veya ESC/overlay tıklamasında hiçbir işlem yapma
+          toast.importCanceled();
+          return null;
+        }
       });
       
       if (action === true) {
@@ -488,7 +494,7 @@ const TestList = () => {
         
         setTests(updatedTests);
         setToStorage('savedTestFlows', updatedTests);
-        notify.saveSuccess(`"${test.name}" testi güncellendi`);
+        toast.saveSuccess(`"${test.name}" testi güncellendi`);
       } else if (action === false) {
         // Yeni isimle kaydet
         const newName = `${test.name} (Kopyası)`;
@@ -506,7 +512,7 @@ const TestList = () => {
         const updatedTests = [...tests, newTest];
         setTests(updatedTests);
         setToStorage('savedTestFlows', updatedTests);
-        notify.saveSuccess(`"${newName}" testi oluşturuldu`);
+        toast.saveSuccess(`"${newName}" testi oluşturuldu`);
       }
       // Eğer modal kapatılırsa hiçbir şey yapma
     } 
@@ -580,8 +586,13 @@ const TestList = () => {
         content: modalContent,
         width: '600px',
         showCloseButton: true,
-        closeOnEsc: false,
-        closeOnOverlay: false
+        closeOnEsc: true,
+        closeOnOverlay: true,
+        onClose: () => {
+          // X butonuna basıldığında veya ESC/overlay tıklamasında hiçbir işlem yapma
+          toast.importCanceled();
+          resolve(null);
+        }
       });
       
       // Modal'ı kapatma fonksiyonu
@@ -609,7 +620,7 @@ const TestList = () => {
             return t;
           });
           
-          notify.saveSuccess(`"${test.name}" testi güncellendi`);
+          toast.saveSuccess(`"${test.name}" testi güncellendi`);
         } else if (action === 'rename') {
           // Yeni isimle kaydet
           const newName = `${test.name} (Kopyası)`;
@@ -625,10 +636,10 @@ const TestList = () => {
           };
           
           updatedTests = [...tests, newTest];
-          notify.saveSuccess(`"${newName}" testi oluşturuldu`);
+          toast.saveSuccess(`"${newName}" testi oluşturuldu`);
         } else if (action === 'skip') {
           // Atla - hiçbir şey yapma
-          notify.info(`"${test.name}" testi atlandı`);
+          toast.info(`"${test.name}" testi atlandı`);
         }
         
         // Çakışan testi listeden kaldır
@@ -667,7 +678,7 @@ const TestList = () => {
             });
           });
           
-          notify.saveSuccess(`${conflictTests.length} test güncellendi`);
+          toast.saveSuccess(`${conflictTests.length} test güncellendi`);
         } else if (action === 'rename') {
           // Tümünü yeni isimle kaydet
           const newTests = conflictTests.map(test => ({
@@ -682,10 +693,10 @@ const TestList = () => {
           }));
           
           updatedTests = [...tests, ...newTests];
-          notify.saveSuccess(`${newTests.length} yeni test oluşturuldu`);
+          toast.saveSuccess(`${newTests.length} yeni test oluşturuldu`);
         } else if (action === 'skip') {
           // Tümünü atla - hiçbir şey yapma
-          notify.info(`${conflictTests.length} test atlandı`);
+          toast.info(`${conflictTests.length} test atlandı`);
         }
         
         // Testleri güncelle
@@ -712,7 +723,7 @@ const TestList = () => {
   // Eğer yükleme durumundaysa LoadingState göster
   if (isLoading) {
     return (
-      <div className="test-list-page">
+      <div className="page-container">
         <PageHeader 
           title="Akışlar" 
           subtitle="Tüm test senaryolarınızı görüntüleyin ve yönetin" 
@@ -725,7 +736,7 @@ const TestList = () => {
   // Eğer hata varsa ErrorState göster
   if (error) {
     return (
-      <div className="test-list-page">
+      <div className="page-container">
         <PageHeader 
           title="Akışlar" 
           subtitle="Tüm test senaryolarınızı görüntüleyin ve yönetin" 
@@ -736,7 +747,7 @@ const TestList = () => {
   }
 
   return (
-    <div className="test-list-page">
+    <div className="page-container">
       <PageHeader 
         title="Akışlar" 
         subtitle="Tüm test senaryolarınızı görüntüleyin ve yönetin"

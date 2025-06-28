@@ -75,12 +75,10 @@ const Scheduling = () => {
   ];
 
   const toggleSchedule = (scheduleId) => {
-    // Toggle aktif/pasif durumu
-    console.log('Toggle schedule:', scheduleId);
   };
 
   return (
-    <div className="scheduling-page">
+    <div className="page-container">
       <PageHeader 
         title="Zamanlama" 
         subtitle="Testlerin otomatik çalıştırma zamanlarını yönetin" 

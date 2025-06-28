@@ -12,7 +12,7 @@ export const confirm = async (options) => {
   if (modalContext) {
     return await modalContext.showConfirm(options);
   }
-  console.warn('Modal context not available');
+  
   return false;
 };
 
@@ -21,7 +21,7 @@ export const alert = async (options) => {
   if (modalContext) {
     return await modalContext.showAlert(options);
   }
-  console.warn('Modal context not available');
+  
   return false;
 };
 
@@ -31,7 +31,7 @@ export const modal = {
     if (modalContext) {
       return await modalContext.showCustomModal(options);
     }
-    console.warn('Modal context not available');
+    
     return null;
   },
 
@@ -39,14 +39,14 @@ export const modal = {
     if (modalContext) {
       return modalContext.removeModal(id);
     }
-    console.warn('Modal context not available');
+    
   },
 
   closeAll: () => {
     if (modalContext) {
       return modalContext.removeAllModals();
     }
-    console.warn('Modal context not available');
+    
   }
 };
 

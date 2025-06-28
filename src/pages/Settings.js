@@ -17,7 +17,7 @@ import {
   RotateCcw,
   AlertCircle
 } from 'lucide-react';
-import { toast, notify } from '../utils/notificationUtils';
+import { toast } from '../utils/notifications';
 import { confirmActions } from '../utils/modalUtils';
 import { PageHeader } from '../components';
 import '../styles/main.css';
@@ -34,9 +34,9 @@ const Settings = () => {
         // Diğer ayarlar...
       };
       localStorage.setItem('userSettings', JSON.stringify(settings));
-      notify.saveSuccess('Ayarlar');
+      toast.saveSuccess('Ayarlar');
     } catch (error) {
-      notify.saveError('Ayarlar');
+      toast.saveError('Ayarlar');
     }
   };
 
@@ -46,7 +46,7 @@ const Settings = () => {
     if (confirmed) {
       setShowApiKey(false);
       localStorage.removeItem('userSettings');
-      notify.saveSuccess('Ayarlar sıfırlandı');
+      toast.saveSuccess('Ayarlar sıfırlandı');
     }
   };
 
@@ -69,9 +69,9 @@ const Settings = () => {
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
       
-      notify.saveSuccess('Veriler dışa aktarıldı');
+      toast.saveSuccess('Veriler dışa aktarıldı');
     } catch (error) {
-      notify.saveError('Veri dışa aktarma');
+      toast.saveError('Veri dışa aktarma');
     }
   };
 
@@ -92,7 +92,7 @@ const Settings = () => {
   ];
 
   return (
-    <div className="settings-page">
+    <div className="page-container">
       <PageHeader 
         title="Ayarlar" 
         subtitle="Kişisel tercihlerinizi ve sistem ayarlarınızı yönetin" 

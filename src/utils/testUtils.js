@@ -1,5 +1,5 @@
 // Test akışları için ortak import/export fonksiyonları
-import { globalNotify } from './globalNotification';
+import { toast } from './notifications';
 
 export const exportTestFlow = (testData, fileName) => {
   try {
@@ -23,11 +23,11 @@ export const exportTestFlow = (testData, fileName) => {
     
     URL.revokeObjectURL(url);
     
-    globalNotify.exportSuccess(link.download);
+    toast.exportSuccess(link.download);
     return true;
   } catch (error) {
     console.error('Dışa aktarma hatası:', error);
-    globalNotify.exportError(error.message);
+    toast.exportError(error.message);
     return false;
   }
 };
@@ -83,7 +83,7 @@ export const importTestFlow = (stepTypes, onImportSuccess, customFile = null) =>
           })).filter(step => step.icon !== null); // Geçersiz type'ları filtrele
 
           if (validSteps.length !== testData.steps.length) {
-            console.warn('Bazı adımlar geçersiz olduğu için atlandı');
+            // ... existing code ...
           }
 
           const importedData = {
@@ -96,11 +96,11 @@ export const importTestFlow = (stepTypes, onImportSuccess, customFile = null) =>
             onImportSuccess(importedData);
           }
           
-          globalNotify.importSuccess(testData.testName, validSteps.length);
+          toast.importSuccess(testData.testName, validSteps.length);
           resolve(importedData);
         } catch (error) {
           console.error('İçe aktarma hatası:', error);
-          globalNotify.importError(error.message);
+          toast.importError(error.message);
           reject(error);
         }
       };

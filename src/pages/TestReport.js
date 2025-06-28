@@ -20,7 +20,7 @@ import {
 import { downloadTestReport, saveTestReportToStorage } from '../utils/reportUtils';
 import { runTestWithHandling } from '../utils/testRunner';
 import { setTempData } from '../utils/storageUtils';
-import { toast } from '../utils/notificationUtils';
+import { toast } from '../utils/notifications';
 import { useNotification } from '../contexts/NotificationContext';
 import { getStatusIcon } from '../utils/statusUtils';
 import { LoadingState, ErrorState } from '../components';
@@ -233,9 +233,10 @@ const TestReport = () => {
         toast.info(`${testData.testName} testi başlatılıyor...`);
       },
       onSuccess: (result) => {
+        toast.success(`${testData.testName} testi başarıyla tamamlandı!`);
+        
         // Test sonucunu Reports sayfası için kaydet
         saveTestReportToStorage(result, testData);
-        toast.success(`${testData.testName} testi başarıyla tamamlandı!`);
         
         // Sayfa yenilensin ki yeni rapor görülsün
         setTimeout(() => {
@@ -301,7 +302,7 @@ const TestReport = () => {
   // Loading durumu
   if (loading) {
     return (
-      <div className="test-report-page">
+      <div className="page-container">
         <LoadingState 
           message="Rapor yükleniyor..." 
           size="large"
@@ -314,7 +315,7 @@ const TestReport = () => {
   // Rapor bulunamadı durumu
   if (!testDetails) {
     return (
-      <div className="test-report-page">
+      <div className="page-container">
         <ErrorState 
           message="Bu ID'ye sahip bir test raporu bulunamadı." 
           size="large"
@@ -330,7 +331,7 @@ const TestReport = () => {
   }
 
   return (
-    <div className="test-report-page">
+    <div className="page-container">
       {/* Header */}
       <div className="report-header">
         <div className="header-navigation">
