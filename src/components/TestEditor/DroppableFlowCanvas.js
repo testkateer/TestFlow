@@ -4,7 +4,7 @@ import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import SortableStep from './SortableStep';
 import { Plus } from 'lucide-react';
 
-const DroppableFlowCanvas = ({ steps, onSelect, onRemove, selectedStep }) => {
+const DroppableFlowCanvas = ({ steps, onSelect, onRemove, selectedStep, selectedSteps = new Set() }) => {
   const { setNodeRef, isOver } = useDroppable({
     id: 'flow-canvas',
   });
@@ -38,6 +38,7 @@ const DroppableFlowCanvas = ({ steps, onSelect, onRemove, selectedStep }) => {
                   onSelect={onSelect}
                   onRemove={onRemove}
                   isSelected={selectedStep?.id === step.id}
+                  isMultiSelected={selectedSteps.has(step.id)}
                   index={index}
                 />
                 {index < steps.length - 1 && (

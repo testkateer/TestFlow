@@ -18,9 +18,12 @@ import {
   AlertCircle,
   X,
   Undo,
-  Redo
+  Redo,
+  Copy,
+  Clipboard
 } from 'lucide-react';
 import useHistory from '../hooks/useHistory';
+import useKeyboardShortcuts from '../hooks/useKeyboardShortcuts';
 import { exportTestFlow, importTestFlow } from '../utils/testUtils';
 import { runTestWithHandling } from '../utils/testRunner';
 import { getFromStorage, setToStorage, setTempData } from '../utils/storageUtils';
@@ -66,6 +69,8 @@ const TestEditor = () => {
   const { testName, steps } = editorState;
 
   const [selectedStep, setSelectedStep] = useState(null);
+  const [selectedSteps, setSelectedSteps] = useState(new Set()); // For multi-selection
+  const [copiedSteps, setCopiedSteps] = useState([]); // For copy/paste functionality
   const [isRunning, setIsRunning] = useState(false);
   const [testResults, setTestResults] = useState(null);
   const { showError } = useNotification();
@@ -89,6 +94,56 @@ const TestEditor = () => {
 
   const activeStepForOverlay = steps.find(step => step.id === activeId);
   const activeStepTypeForOverlay = stepTypes.find(st => `draggable-${st.id}` === activeId);
+
+  // Keyboard shortcuts setup
+  const keyboardHandlers = {
+    onUndo: () => canUndo && undo(),
+    onRedo: () => canRedo && redo(),
+    onSave: () => hasUnsavedChanges && saveTestFlow(),
+    onSelectAll: () => {
+      if (steps.length > 0) {
+        const allStepIds = new Set(steps.map(s => s.id));
+        setSelectedSteps(allStepIds);
+        toast.info(`${steps.length} adım seçildi`);
+      }
+    },
+    onCopy: () => {
+      if (selectedSteps.size > 0) {
+        const stepsToCopy = steps.filter(step => selectedSteps.has(step.id));
+        setCopiedSteps(stepsToCopy);
+        toast.success(`${stepsToCopy.length} adım kopyalandı`);
+      } else if (selectedStep) {
+        setCopiedSteps([selectedStep]);
+        toast.success('Adım kopyalandı');
+      }
+    },
+    onPaste: () => {
+      if (copiedSteps.length > 0) {
+        pasteSteps();
+      }
+    },
+    onDelete: () => {
+      if (selectedSteps.size > 0) {
+        deleteSelectedSteps();
+      } else if (selectedStep) {
+        removeStep(selectedStep.id);
+      }
+    },
+    onDuplicate: () => {
+      if (selectedStep) {
+        duplicateStep(selectedStep.id);
+      }
+    },
+    onRun: () => !isRunning && steps.length > 0 && runTest(),
+    onImport: () => handleImportTestFlow(),
+    onExport: () => handleExportTestFlow(),
+    onEscape: () => {
+      setSelectedSteps(new Set());
+      setSelectedStep(null);
+    }
+  };
+
+  const { shortcuts, formatShortcut } = useKeyboardShortcuts(keyboardHandlers);
 
   // Dnd-kit sensors
   const sensors = useSensors(
@@ -223,6 +278,85 @@ const TestEditor = () => {
     setEditorState(s => ({ ...s, steps: s.steps.filter(step => step.id !== stepId) }));
     if (selectedStep?.id === stepId) {
       setSelectedStep(null);
+    }
+    // Remove from multi-selection if it exists
+    setSelectedSteps(prev => {
+      const newSet = new Set(prev);
+      newSet.delete(stepId);
+      return newSet;
+    });
+  };
+
+  const deleteSelectedSteps = () => {
+    if (selectedSteps.size === 0) return;
+    
+    setEditorState(s => ({
+      ...s,
+      steps: s.steps.filter(step => !selectedSteps.has(step.id))
+    }));
+    
+    // Clear selections
+    setSelectedSteps(new Set());
+    if (selectedStep && selectedSteps.has(selectedStep.id)) {
+      setSelectedStep(null);
+    }
+    
+    toast.success(`${selectedSteps.size} adım silindi`);
+  };
+
+  const duplicateStep = (stepId) => {
+    const stepToDuplicate = steps.find(s => s.id === stepId);
+    if (!stepToDuplicate) return;
+
+    const duplicatedStep = {
+      ...stepToDuplicate,
+      id: Date.now() + Math.random(), // Ensure unique ID
+      name: `${stepToDuplicate.name} (Kopya)`
+    };
+
+    const originalIndex = steps.findIndex(s => s.id === stepId);
+    setEditorState(s => {
+      const newSteps = [...s.steps];
+      newSteps.splice(originalIndex + 1, 0, duplicatedStep);
+      return { ...s, steps: newSteps };
+    });
+
+    toast.success('Adım çoğaltıldı');
+  };
+
+  const pasteSteps = () => {
+    if (copiedSteps.length === 0) return;
+
+    const pastedSteps = copiedSteps.map(step => ({
+      ...step,
+      id: Date.now() + Math.random(), // Ensure unique IDs
+      name: step.name.includes('(Kopya)') ? step.name : `${step.name} (Kopya)`
+    }));
+
+    setEditorState(s => ({
+      ...s,
+      steps: [...s.steps, ...pastedSteps]
+    }));
+
+    toast.success(`${pastedSteps.length} adım yapıştırıldı`);
+  };
+
+  const handleStepSelection = (stepId, isCtrlPressed = false) => {
+    if (isCtrlPressed) {
+      // Multi-selection with Ctrl
+      setSelectedSteps(prev => {
+        const newSet = new Set(prev);
+        if (newSet.has(stepId)) {
+          newSet.delete(stepId);
+        } else {
+          newSet.add(stepId);
+        }
+        return newSet;
+      });
+    } else {
+      // Single selection
+      setSelectedSteps(new Set());
+      setSelectedStep(steps.find(s => s.id === stepId));
     }
   };
 
@@ -461,12 +595,21 @@ const TestEditor = () => {
           </div>
         </div>
         <div className="header-actions">
-            <button className="btn btn-secondary" onClick={undo} disabled={!canUndo} title="Geri Al"><Undo size={16} /> Geri Al</button>
-            <button className="btn btn-secondary" onClick={redo} disabled={!canRedo} title="İleri Al"><Redo size={16} /> İleri Al</button>
-            <button className="btn btn-secondary" onClick={handleImportTestFlow}><Upload size={16} /> İçe Aktar</button>
-            <button className="btn btn-secondary" onClick={handleExportTestFlow}><Download size={16} /> Dışa Aktar</button>
-            <button className="btn btn-primary" onClick={saveTestFlow} disabled={!hasUnsavedChanges || steps.length === 0}><Save size={16} /> Kaydet</button>
-            <button className={`btn btn-success ${isRunning ? 'disabled' : ''}`} onClick={runTest} disabled={isRunning || steps.length === 0}><Play size={16} /> {isRunning ? 'Çalışıyor...' : 'Çalıştır'}</button>
+            <button className="btn btn-secondary" onClick={undo} disabled={!canUndo} title={`Geri Al (${formatShortcut(shortcuts.undo)})`}><Undo size={16} /> Geri Al</button>
+            <button className="btn btn-secondary" onClick={redo} disabled={!canRedo} title={`İleri Al (${formatShortcut(shortcuts.redo)})`}><Redo size={16} /> İleri Al</button>
+            {selectedSteps.size > 0 && (
+              <>
+                <button className="btn btn-secondary" onClick={() => keyboardHandlers.onCopy()} title={`Kopyala (${formatShortcut(shortcuts.copy)})`}><Copy size={16} /> Kopyala ({selectedSteps.size})</button>
+                <button className="btn btn-danger" onClick={() => keyboardHandlers.onDelete()} title={`Sil (${formatShortcut(shortcuts.delete)})`}><Trash2 size={16} /> Sil ({selectedSteps.size})</button>
+              </>
+            )}
+            {copiedSteps.length > 0 && (
+              <button className="btn btn-secondary" onClick={() => keyboardHandlers.onPaste()} title={`Yapıştır (${formatShortcut(shortcuts.paste)})`}><Clipboard size={16} /> Yapıştır ({copiedSteps.length})</button>
+            )}
+            <button className="btn btn-secondary" onClick={handleImportTestFlow} title={`İçe Aktar (${formatShortcut(shortcuts.import)})`}><Upload size={16} /> İçe Aktar</button>
+            <button className="btn btn-secondary" onClick={handleExportTestFlow} title={`Dışa Aktar (${formatShortcut(shortcuts.export)})`}><Download size={16} /> Dışa Aktar</button>
+            <button className="btn btn-primary" onClick={saveTestFlow} disabled={!hasUnsavedChanges || steps.length === 0} title={`Kaydet (${formatShortcut(shortcuts.save)})`}><Save size={16} /> Kaydet</button>
+            <button className={`btn btn-success ${isRunning ? 'disabled' : ''}`} onClick={runTest} disabled={isRunning || steps.length === 0} title={`Çalıştır (${formatShortcut(shortcuts.run)})`}><Play size={16} /> {isRunning ? 'Çalışıyor...' : 'Çalıştır'}</button>
           </div>
       </div>
 
@@ -488,9 +631,10 @@ const TestEditor = () => {
             </div>
             <DroppableFlowCanvas
               steps={steps}
-              onSelect={(stepId) => setSelectedStep(steps.find(s => s.id === stepId))}
+              onSelect={(stepId, isCtrlPressed) => handleStepSelection(stepId, isCtrlPressed)}
               onRemove={removeStep}
               selectedStep={selectedStep}
+              selectedSteps={selectedSteps}
             />
           </div>
           

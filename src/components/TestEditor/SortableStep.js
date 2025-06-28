@@ -3,7 +3,7 @@ import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Trash2, Edit } from 'lucide-react';
 
-const SortableStep = ({ step, onSelect, onRemove, isSelected, index, isDragOverlay = false }) => {
+const SortableStep = ({ step, onSelect, onRemove, isSelected, isMultiSelected = false, index, isDragOverlay = false }) => {
   const {
     attributes,
     listeners,
@@ -33,6 +33,18 @@ const SortableStep = ({ step, onSelect, onRemove, isSelected, index, isDragOverl
     stepClasses += ' drag-over';
   }
 
+  // Add multi-selection styling
+  if (isMultiSelected && !isSelected) {
+    stepClasses += ' multi-selected';
+  }
+
+  const handleClick = (event) => {
+    if (!isDragOverlay) {
+      const isCtrlPressed = event.ctrlKey || event.metaKey;
+      onSelect(step.id, isCtrlPressed);
+    }
+  };
+
   return (
     <div className="flow-step-container">
       {/* Insertion indicator - shows above the step when dragging over */}
@@ -46,13 +58,17 @@ const SortableStep = ({ step, onSelect, onRemove, isSelected, index, isDragOverl
       <div
         ref={setNodeRef}
         style={style}
-        onClick={() => !isDragOverlay && onSelect(step.id)}
+        onClick={handleClick}
         className={stepClasses}
         {...attributes}
         {...listeners}
       >
         <div className="step-number">
           {index + 1}
+          {/* Multi-selection indicator */}
+          {isMultiSelected && (
+            <div className="multi-select-indicator">✓</div>
+          )}
         </div>
         <div className="step-content">
           <div className="step-header">
