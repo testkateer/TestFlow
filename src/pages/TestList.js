@@ -13,9 +13,10 @@ import {
   Heart,
   CheckSquare,
   Square,
-  X
+  X,
+  Upload
 } from 'lucide-react';
-import { exportTestFlow } from '../utils/testUtils';
+import { exportTestFlow, importTestFlow } from '../utils/testUtils';
 import { runTestWithHandling } from '../utils/testRunner';
 import { getFromStorage, setToStorage,  setTempData } from '../utils/storageUtils';
 import { getStatusText, getBrowserIcon } from '../utils/statusUtils';
@@ -353,6 +354,91 @@ const TestList = () => {
     }
   };
 
+  // Toplu içeri aktarma işlevi
+  const handleImportTests = async () => {
+    try {
+      // Adım türlerini al (step tiplerini belirtmek için)
+      const stepTypes = [
+        { id: 'navigation', icon: 'Globe' },
+        { id: 'click', icon: 'MousePointer' },
+        { id: 'input', icon: 'Type' },
+        { id: 'screenshot', icon: 'Camera' },
+        { id: 'wait', icon: 'Clock' },
+        { id: 'assertion', icon: 'CheckCircle' },
+        { id: 'custom', icon: 'Code' }
+      ];
+
+      // Dosya seçme ve okuma işlemi için importTestFlow'u çağır
+      const fileInput = document.createElement('input');
+      fileInput.type = 'file';
+      fileInput.accept = '.json';
+      fileInput.multiple = true; // Çoklu dosya seçimine izin ver
+      fileInput.click();
+
+      fileInput.onchange = async (e) => {
+        const files = e.target.files;
+        if (!files || files.length === 0) return;
+        
+        let importedTests = [];
+        let errorCount = 0;
+        
+        for (let i = 0; i < files.length; i++) {
+          const file = files[i];
+          try {
+            const reader = new FileReader();
+            const fileContent = await new Promise((resolve, reject) => {
+              reader.onload = e => resolve(e.target.result);
+              reader.onerror = e => reject(e);
+              reader.readAsText(file);
+            });
+            
+            const testData = JSON.parse(fileContent);
+            
+            // Veri doğrulama
+            if (!testData.testName || !Array.isArray(testData.steps)) {
+              throw new Error(`Geçersiz test dosyası formatı: ${file.name}`);
+            }
+            
+            // Yeni ID oluştur
+            const newId = Date.now().toString() + Math.random().toString(36).substr(2, 9);
+            
+            // Test nesnesini oluştur
+            const importedTest = {
+              id: newId,
+              name: testData.testName,
+              steps: testData.steps,
+              status: 'pending',
+              lastRun: null,
+              duration: null,
+              createdAt: new Date().toISOString(),
+              browser: testData.browser || 'chrome'
+            };
+            
+            importedTests.push(importedTest);
+          } catch (error) {
+            console.error(`${file.name} içeri aktarma hatası:`, error);
+            errorCount++;
+          }
+        }
+        
+        if (importedTests.length > 0) {
+          const updatedTests = [...tests, ...importedTests];
+          setTests(updatedTests);
+          setToStorage('savedTestFlows', updatedTests);
+          
+          notify.saveSuccess(`${importedTests.length} test içeri aktarıldı`);
+        }
+        
+        if (errorCount > 0) {
+          notify.saveError(`${errorCount} dosya içeri aktarılamadı`);
+        }
+      };
+    } catch (error) {
+      console.error('İçeri aktarma hatası:', error);
+      notify.saveError('Test içeri aktarma');
+    }
+  };
+
   const filteredTests = tests.filter(test => {
     const matchesSearch = searchTerm === '' || 
       (test.name && test.name.toLowerCase().includes(searchTerm.toLowerCase())) || 
@@ -397,6 +483,14 @@ const TestList = () => {
         subtitle="Tüm test senaryolarınızı görüntüleyin ve yönetin"
         actions={
           <>
+            <button 
+              className="btn btn-secondary"
+              onClick={handleImportTests}
+              title="Test senaryolarını içeri aktar"
+            >
+              <Upload size={16} />
+              İçeri Aktar
+            </button>
             <button 
               className={`btn btn-secondary ${showFavorites ? 'active' : ''}`}
               onClick={() => setShowFavorites(!showFavorites)}
