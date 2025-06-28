@@ -265,11 +265,11 @@ const TestEditor = () => {
   const getDefaultConfig = (type) => {
     switch (type) {
       case 'navigate': return { url: '' };
-      case 'click': return { selector: '#button', description: 'Button element' };
-      case 'input': return { selector: '#input', text: 'Sample text', description: 'Input field' };
-      case 'wait': return { duration: 2000, description: '2 saniye bekle' };
-      case 'verify': return { selector: '#element', description: 'Element visibility check' };
-      case 'refresh': return { description: 'Sayfa yenileme' };
+      case 'click': return { description: '' , selector: '#button' };
+      case 'input': return { description: '', selector: '#input', text: '' };
+      case 'wait': return { description: '', duration: 2000 };
+      case 'verify': return { description: '', selector: '#element', text: '' };
+      case 'refresh': return { description: '' };
       default: return {};
     }
   };
@@ -516,10 +516,12 @@ const TestEditor = () => {
   const renderSelectedStepConfig = () => {
     if (!selectedStep) {
       return (
-        <div className="no-selection">
-          <Settings size={48} className="settings-icon" />
-          <h4>Adım seçin</h4>
-          <p>Bir test adımını seçerek detaylarını düzenleyin</p>
+        <div className="step-config-empty">
+          <div className="empty-state">
+            <Settings size={48} className="empty-icon" />
+            <h4>Adım Seçin</h4>
+            <p>Bir test adımını seçerek detaylarını düzenleyin</p>
+          </div>
         </div>
       );
     }
@@ -530,25 +532,90 @@ const TestEditor = () => {
       updateStepConfig(id, { ...config, [key]: value });
     };
 
+    const getFieldType = (key, value) => {
+      if (key === 'duration') return 'number';
+      if (key === 'url') return 'url';
+      return 'text';
+    };
+
+    const getFieldLabel = (key) => {
+      const labels = {
+        url: 'Web Adresi (URL)',
+        selector: 'CSS Seçici',
+        text: 'Metin İçeriği',
+        duration: 'Bekleme Süresi (ms)',
+        description: 'Açıklama'
+      };
+      return labels[key] || key.charAt(0).toUpperCase() + key.slice(1);
+    };
+
+    const getFieldPlaceholder = (key, value) => {
+      const placeholders = {
+        url: 'https://example.com',
+        selector: '#element-id, .class-name, [data-testid="test"]',
+        text: 'Girilecek metin...',
+        duration: '2000',
+        description: 'Bu adımın açıklaması...'
+      };
+      return placeholders[key] || `${key} değeri girin...`;
+    };
+
+
+
     return (
-      <div className="step-config">
-        <div className="config-header">
-          {Icon && <Icon size={20} />}
-          <span>{name}</span>
+      <div className="step-config-content">
+        <div className="config-header-enhanced">
+          <div className="step-icon-wrapper">
+            {Icon && <Icon size={24} />}
+          </div>
+          <div className="step-info">
+            <h4 className="step-title">{name}</h4>
+            <span className="step-type-label">#{steps.findIndex(s => s.id === id) + 1}</span>
+          </div>
+          <div className="config-actions">
+            <button 
+              className="btn-icon btn-icon-sm" 
+              onClick={() => duplicateStep(id)}
+              title="Adımı Çoğalt"
+            >
+              <Copy size={16} />
+            </button>
+            <button 
+              className="btn-icon btn-icon-sm btn-danger" 
+              onClick={() => removeStep(id)}
+              title="Adımı Sil"
+            >
+              <Trash2 size={16} />
+            </button>
+          </div>
         </div>
-        <div className="config-form">
+
+        <div className="config-form-enhanced">
           {Object.entries(config).map(([key, value]) => (
-            <div className="form-group" key={key}>
-              <label className="capitalize">{key}:</label>
-              <input
-                type={typeof value === 'number' ? 'number' : 'text'}
-                value={value}
-                onChange={(e) => handleConfigChange(key, typeof value === 'number' ? parseInt(e.target.value, 10) || 0 : e.target.value)}
-                placeholder={`${key} değeri girin...`}
-              />
+            <div className="form-field-enhanced" key={key}>
+              <label className="field-label">
+                {getFieldLabel(key)}
+                {key === 'url' || key === 'selector' ? <span className="required-indicator">*</span> : null}
+              </label>
+              <div className="field-input-wrapper">
+                <input
+                  type={getFieldType(key, value)}
+                  value={value}
+                  onChange={(e) => handleConfigChange(key, getFieldType(key, value) === 'number' ? parseInt(e.target.value, 10) || 0 : e.target.value)}
+                  placeholder={getFieldPlaceholder(key, value)}
+                  className={`field-input ${key === 'url' || key === 'selector' ? 'required' : ''}`}
+                  required={key === 'url' || key === 'selector'}
+                />
+                {key === 'duration' && (
+                  <span className="field-suffix">ms</span>
+                )}
+              </div>
+              
             </div>
           ))}
         </div>
+
+
       </div>
     );
   };
