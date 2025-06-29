@@ -23,4 +23,4 @@ export const getStepTypeById = (id) => {
 export const getStepTypeIcon = (id) => {
   const stepType = getStepTypeById(id);
   return stepType ? stepType.icon : null;
-}; 
+};
