@@ -6,6 +6,7 @@ import Layout from './components/Layout';
 import AnimatedRoutes from './components/AnimatedRoutes';
 import { ModalContainer } from './components/Modal';
 import ContextSetup from './components/ContextSetup';
+import ToastContainer from './components/ToastContainer';
 
 function App() {
   return (
@@ -17,6 +18,7 @@ function App() {
           </Layout>
           <ContextSetup />
           <ModalContainer />
+          <ToastContainer />
         </Router>
       </TestFlowProvider>
     </ModalProvider>

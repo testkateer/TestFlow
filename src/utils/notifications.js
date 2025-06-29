@@ -5,88 +5,62 @@ let listeners = [];
 
 // Toast container'ı DOM'a ekle
 const createToastContainer = () => {
-  if (document.getElementById('toast-container')) return;
+  if (document.getElementById('toast-container')) {
+    console.log('Toast container already exists');
+    return;
+  }
   
+  console.log('Creating toast container');
   const container = document.createElement('div');
   container.id = 'toast-container';
   container.className = 'toast-container';
-  container.style.cssText = `
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    z-index: 10000;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    pointer-events: none;
-  `;
   document.body.appendChild(container);
+  console.log('Toast container created and added to DOM');
 };
 
 // Toast elementi oluştur
 const createToastElement = (toast) => {
-  const element = document.createElement('div');
-  element.className = `toast toast-${toast.type}`;
-  element.style.cssText = `
-    background: var(--card-bg, #ffffff);
-    border: 1px solid var(--border-color, #e0e0e0);
-    border-radius: 8px;
-    padding: 12px 16px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    min-width: 300px;
-    max-width: 400px;
-    pointer-events: auto;
-    transform: translateX(100%);
-    transition: transform 0.3s ease;
-    position: relative;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 14px;
-    line-height: 1.4;
-  `;
+  try {
+    console.log('Creating toast element for:', toast);
+    const element = document.createElement('div');
+    element.className = `toast toast--${toast.type} toast--visible`;
 
-  // Type'a göre renk
-  const colors = {
-    success: { bg: '#d4edda', border: '#c3e6cb', text: '#155724' },
-    error: { bg: '#f8d7da', border: '#f5c6cb', text: '#721c24' },
-    warning: { bg: '#fff3cd', border: '#ffeaa7', text: '#856404' },
-    info: { bg: '#d1ecf1', border: '#bee5eb', text: '#0c5460' }
-  };
+    // İkon ekle
+    const icons = {
+      success: '✓',
+      error: '✕',
+      warning: '⚠',
+      info: 'ℹ'
+    };
 
-  if (colors[toast.type]) {
-    const color = colors[toast.type];
-    element.style.backgroundColor = color.bg;
-    element.style.borderColor = color.border;
-    element.style.color = color.text;
+    element.innerHTML = `
+      <span class="toast__icon">${icons[toast.type] || 'ℹ'}</span>
+      <span class="toast__message">${toast.message}</span>
+      ${toast.closeable !== false ? '<button class="toast__close">×</button>' : ''}
+    `;
+
+    // Kapatma butonu
+    const closeBtn = element.querySelector('.toast__close');
+    if (closeBtn) {
+      closeBtn.onclick = () => removeToast(toast.id);
+    }
+
+    console.log('Toast element created successfully:', element);
+    return element;
+  } catch (error) {
+    console.error('Error creating toast element:', error);
+    // Fallback basit element
+    const fallbackElement = document.createElement('div');
+    fallbackElement.textContent = toast.message;
+    fallbackElement.style.cssText = `
+      background: #f0f0f0;
+      padding: 10px;
+      margin: 5px;
+      border-radius: 4px;
+      border: 1px solid #ccc;
+    `;
+    return fallbackElement;
   }
-
-  // İkon ekle
-  const icons = {
-    success: '✓',
-    error: '✕',
-    warning: '⚠',
-    info: 'ℹ'
-  };
-
-  element.innerHTML = `
-    <span style="font-weight: bold; font-size: 16px;">${icons[toast.type] || 'ℹ'}</span>
-    <span style="flex: 1;">${toast.message}</span>
-    ${toast.closeable !== false ? '<button style="background: none; border: none; cursor: pointer; padding: 0; margin-left: 8px; font-size: 16px; opacity: 0.7;">×</button>' : ''}
-  `;
-
-  // Kapatma butonu
-  const closeBtn = element.querySelector('button');
-  if (closeBtn) {
-    closeBtn.onclick = () => removeToast(toast.id);
-  }
-
-  // Animasyon
-  setTimeout(() => {
-    element.style.transform = 'translateX(0)';
-  }, 10);
-
-  return element;
 };
 
 // DOM'dan toast'ı kaldır
@@ -95,7 +69,7 @@ const removeToastFromDOM = (toastId) => {
   if (container) {
     const element = container.querySelector(`[data-toast-id="${toastId}"]`);
     if (element) {
-      element.style.transform = 'translateX(100%)';
+      element.classList.add('toast--removing');
       setTimeout(() => {
         if (element.parentNode) {
           element.parentNode.removeChild(element);
@@ -107,38 +81,49 @@ const removeToastFromDOM = (toastId) => {
 
 // Toast ekle
 const addToast = (message, type = 'info', options = {}) => {
-  createToastContainer();
-  
-  const id = ++toastId;
-  const toast = {
-    id,
-    message,
-    type,
-    duration: options.duration || (type === 'error' ? 6000 : 4000),
-    closeable: options.closeable !== false,
-    persistent: options.persistent || false,
-    ...options
-  };
+  try {
+    console.log('Adding toast:', { message, type, options });
+    
+    const id = ++toastId;
+    const toast = {
+      id,
+      message,
+      type,
+      duration: options.duration || (type === 'error' ? 6000 : 4000),
+      closeable: options.closeable !== false,
+      persistent: options.persistent || false,
+      ...options
+    };
 
-  toasts.push(toast);
-  
-  // DOM'a ekle
-  const container = document.getElementById('toast-container');
-  const element = createToastElement(toast);
-  element.setAttribute('data-toast-id', id);
-  container.appendChild(element);
+    toasts.push(toast);
+    
+    console.log('Toast added to state:', toast);
 
-  // Auto remove
-  if (!toast.persistent && toast.duration > 0) {
-    setTimeout(() => {
-      removeToast(id);
-    }, toast.duration);
+    // Auto remove
+    if (!toast.persistent && toast.duration > 0) {
+      setTimeout(() => {
+        removeToast(id);
+      }, toast.duration);
+    }
+
+    // Listeners'ı bilgilendir (React bileşeni için)
+    listeners.forEach(listener => listener(toasts));
+
+    // Fallback: DOM manipülasyonu (eski sistem için)
+    createToastContainer();
+    const container = document.getElementById('toast-container');
+    if (container) {
+      const element = createToastElement(toast);
+      element.setAttribute('data-toast-id', id);
+      container.appendChild(element);
+      console.log('Toast added to DOM as fallback:', element);
+    }
+
+    return id;
+  } catch (error) {
+    console.error('Error adding toast:', error);
+    return null;
   }
-
-  // Listeners'ı bilgilendir
-  listeners.forEach(listener => listener(toasts));
-
-  return id;
 };
 
 // Toast kaldır
