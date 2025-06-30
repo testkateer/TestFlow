@@ -8,6 +8,8 @@ import TestReport from '../pages/TestReport';
 import Reports from '../pages/Reports';
 import Scheduling from '../pages/Scheduling';
 import Settings from '../pages/Settings';
+import Login from '../pages/Login';
+import ProtectedRoute from './ProtectedRoute';
 import '../styles/transitions.css';
 
 const AnimatedRoutes = () => {
@@ -23,15 +25,16 @@ const AnimatedRoutes = () => {
           unmountOnExit
         >
           <Routes location={location}>
-            <Route path="/" element={<Dashboard />} />
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/tests" element={<TestList />} />
-            <Route path="/editor" element={<TestEditor />} />
-            <Route path="/editor/:id" element={<TestEditor />} />
-            <Route path="/report/:id" element={<TestReport />} />
-            <Route path="/reports" element={<Reports />} />
-            <Route path="/scheduling" element={<Scheduling />} />
-            <Route path="/settings" element={<Settings />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+            <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+            <Route path="/tests" element={<ProtectedRoute><TestList /></ProtectedRoute>} />
+            <Route path="/editor" element={<ProtectedRoute><TestEditor /></ProtectedRoute>} />
+            <Route path="/editor/:id" element={<ProtectedRoute><TestEditor /></ProtectedRoute>} />
+            <Route path="/report/:id" element={<ProtectedRoute><TestReport /></ProtectedRoute>} />
+            <Route path="/reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
+            <Route path="/scheduling" element={<ProtectedRoute><Scheduling /></ProtectedRoute>} />
+            <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
           </Routes>
         </CSSTransition>
       </SwitchTransition>

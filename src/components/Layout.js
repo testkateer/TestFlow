@@ -7,19 +7,27 @@ import {
   FileText,
   Settings,
   Plus,
-  TestTube2
+  TestTube2,
+  LogOut,
+  User
 } from 'lucide-react';
 import ThemeToggle from './ThemeToggle';
 import { useTestFlow } from '../contexts/TestFlowContext';
+import { useAuth } from '../contexts/AuthContext';
 import '../styles/main.css';
 
 const Layout = ({ children }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const { getReportById } = useTestFlow();
+  const { user, logout } = useAuth();
 
   // Dinamik sayfa başlığı ayarlama
   useEffect(() => {
+    // Login sayfasındaysa sayfa başlığını ayarlama
+    if (location.pathname === '/login') {
+      return;
+    }
     const updatePageTitle = () => {
       const pathname = location.pathname;
       let title = 'TestFlow';
@@ -111,7 +119,12 @@ const Layout = ({ children }) => {
     { path: '/scheduling', icon: Clock, label: 'Zamanlama' },
     { path: '/reports', icon: FileText, label: 'Raporlar' },
     { path: '/settings', icon: Settings, label: 'Ayarlar' },
-  ];
+      ];
+
+  // Login sayfasındaysa layout'u gösterme
+  if (location.pathname === '/login') {
+    return children;
+  }
 
   return (
     <div className="layout">
@@ -143,6 +156,25 @@ const Layout = ({ children }) => {
               </Link>
             );
           })}
+        </div>
+
+        <div className="sidebar-footer">
+          <div className="user-info">
+            <div className="user-avatar">
+              <User size={20} />
+            </div>
+            <div className="user-details">
+              <span className="user-name">{user?.name || 'Admin'}</span>
+              <span className="user-role">{user?.role || 'admin'}</span>
+            </div>
+          </div>
+          <button 
+            className="sidebar-action logout-btn"
+            onClick={logout}
+            title="Çıkış Yap"
+          >
+            <LogOut size={20} />
+          </button>
         </div>
 
 
