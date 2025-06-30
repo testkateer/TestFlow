@@ -45,36 +45,37 @@ export const AuthProvider = ({ children }) => {
     try {
       setIsLoading(true);
       
-      // Demo amaçlı basit auth kontrolü
-      // Gerçek uygulamada API çağrısı yapılacak
       const { username, password } = credentials;
       
-      if (username === 'admin' && password === 'admin123') {
-        const userData = {
-          id: 1,
-          username: 'admin',
-          email: 'admin@testflow.com',
-          name: 'TestFlow Admin',
-          role: 'admin',
-          avatar: null,
-          loginTime: new Date().toISOString()
-        };
+      // API çağrısı
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ username, password }),
+      });
 
-        setUser(userData);
+      const data = await response.json();
+
+      if (data.success) {
+        setUser(data.user);
         setIsAuthenticated(true);
         
-        // LocalStorage'a kaydet
-        localStorage.setItem('testflow_user', JSON.stringify(userData));
+        // Token ve kullanıcı bilgilerini localStorage'a kaydet
+        localStorage.setItem('testflow_user', JSON.stringify(data.user));
+        localStorage.setItem('testflow_token', data.token);
         localStorage.setItem('testflow_auth', 'true');
         
-        return { success: true, user: userData };
+        return { success: true, user: data.user };
       } else {
         return { 
           success: false, 
-          error: 'Geçersiz kullanıcı adı veya şifre' 
+          error: data.error || 'Giriş işlemi başarısız' 
         };
       }
     } catch (error) {
+      console.error('Login error:', error);
       return { 
         success: false, 
         error: 'Giriş işlemi sırasında bir hata oluştu' 
@@ -91,14 +92,60 @@ export const AuthProvider = ({ children }) => {
     
     // LocalStorage'ı temizle
     localStorage.removeItem('testflow_user');
+    localStorage.removeItem('testflow_token');
     localStorage.removeItem('testflow_auth');
   };
 
   // Kullanıcı profili güncelleme
-  const updateProfile = (updates) => {
-    const updatedUser = { ...user, ...updates };
-    setUser(updatedUser);
-    localStorage.setItem('testflow_user', JSON.stringify(updatedUser));
+  const updateProfile = async (updates) => {
+    try {
+      const token = localStorage.getItem('testflow_token');
+      
+      const response = await fetch('/api/auth/profile', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(updates),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setUser(data.user);
+        localStorage.setItem('testflow_user', JSON.stringify(data.user));
+        return { success: true, user: data.user };
+      } else {
+        return { success: false, error: data.error };
+      }
+    } catch (error) {
+      console.error('Profile update error:', error);
+      return { success: false, error: 'Profil güncellenemedi' };
+    }
+  };
+
+  // Şifre değiştirme
+  const changePassword = async (currentPassword, newPassword) => {
+    try {
+      const token = localStorage.getItem('testflow_token');
+      
+      const response = await fetch('/api/auth/change-password', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ currentPassword, newPassword }),
+      });
+
+      const data = await response.json();
+      
+      return data;
+    } catch (error) {
+      console.error('Change password error:', error);
+      return { success: false, error: 'Şifre değiştirilemedi' };
+    }
   };
 
   const value = {
@@ -107,7 +154,8 @@ export const AuthProvider = ({ children }) => {
     isLoading,
     login,
     logout,
-    updateProfile
+    updateProfile,
+    changePassword
   };
 
   return (

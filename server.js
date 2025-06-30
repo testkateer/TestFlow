@@ -1,14 +1,26 @@
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
+const connectDB = require('./src/config/database');
 const PlaywrightTestRunner = require('./src/utils/playwrightRunner');
+
+// Routes
+const authRoutes = require('./routes/auth');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+// MongoDB bağlantısı
+connectDB();
+
 // Middleware
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true }));
+
+// API Routes
+app.use('/api/auth', authRoutes);
 
 // Static files için React build folder'ını serve et
 app.use(express.static(path.join(__dirname, 'build')));
