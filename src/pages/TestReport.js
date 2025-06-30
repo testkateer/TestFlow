@@ -482,7 +482,7 @@ const TestReport = () => {
       {activeTab === 'overview' && (
         <div className="overview-content">
           <div className="overview-grid">
-            <div className="test-summary-modern card">
+            <div className="test-summary card">
               <div className="summary-header">
                 <h3>Test Özeti</h3>
               </div>
